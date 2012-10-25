@@ -1,5 +1,14 @@
 #!/usr/bin/env ruby
 
+day_of_week = ENV['DAY_OF_WEEK']
+if day_of_week
+  today = Time::now.wday.to_s
+  if day_of_week != Time::now.wday.to_s
+    puts "Scheduled to run on day #{day_of_week}, but today is #{today}. Doing nothing."
+    exit
+  end
+end
+
 require 'fog'
 require 'csv'
 require 'mail'
