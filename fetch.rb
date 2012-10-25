@@ -40,7 +40,6 @@ table = reserved_instances.body["reservedInstancesSet"].map do |ri|
 end
 
 csv = table.map {|row| row.to_csv}.join
-puts csv
 
 timestamp = Time::now.to_s
 
