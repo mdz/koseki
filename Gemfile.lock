@@ -25,10 +25,12 @@ GEM
       net-ssh (>= 1.99.1)
     net-ssh (2.6.1)
     nokogiri (1.5.5)
+    pg (0.14.1)
     polyglot (0.3.3)
     rest-client (1.6.7)
       mime-types (>= 1.16)
     ruby-hmac (0.4.0)
+    sequel (3.40.0)
     treetop (1.4.11)
       polyglot
       polyglot (>= 0.3.1)
@@ -39,4 +41,6 @@ PLATFORMS
 DEPENDENCIES
   fog
   mail
+  pg
   rest-client
+  sequel
