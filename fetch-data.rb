@@ -14,7 +14,7 @@ unknown_azs = {}
 
 DB[:clouds].all.each do |cloud|
   cloud_name = cloud[:name]
-  puts cloud_name
+  puts "Scanning: #{cloud_name}"
 
   azmap = {}
   Hash.new DB[:availability_zones].where(:cloud_id => cloud[:id]).map {|row| azmap[row[:logical]] = row[:physical]}
