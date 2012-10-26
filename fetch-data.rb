@@ -1,14 +1,5 @@
 #!/usr/bin/env ruby
 
-day_of_week = ENV['DAY_OF_WEEK']
-if day_of_week
-  today = Time::now.wday.to_s
-  if day_of_week != Time::now.wday.to_s
-    puts "Scheduled to run on day #{day_of_week}, but today is #{today}. Doing nothing."
-    exit
-  end
-end
-
 require 'fog'
 require 'csv'
 require 'mail'
@@ -72,7 +63,8 @@ instances_csv = instances_table.map {|row| row.to_csv}.join
 timestamp = Time::now.to_s
 
 email_to = ENV['EMAIL_TO']
-if email_to
+day_of_week = ENV['EMAIL_DAY_OF_WEEK']
+if email_to and (email_day_of_week == nil or email_day_of_week == Time::now.wday.to_s)
   Mail.defaults do
     delivery_method :smtp, {
       :address => 'smtp.sendgrid.net',
