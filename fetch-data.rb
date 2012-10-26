@@ -63,7 +63,7 @@ instances_csv = instances_table.map {|row| row.to_csv}.join
 timestamp = Time::now.to_s
 
 email_to = ENV['EMAIL_TO']
-day_of_week = ENV['EMAIL_DAY_OF_WEEK']
+email_day_of_week = ENV['EMAIL_DAY_OF_WEEK']
 if email_to and (email_day_of_week == nil or email_day_of_week == Time::now.wday.to_s)
   Mail.defaults do
     delivery_method :smtp, {
