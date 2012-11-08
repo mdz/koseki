@@ -23,7 +23,6 @@ DB[:clouds].all.each do |cloud|
     :aws_access_key_id => cloud[:access_key_id],
     :aws_secret_access_key => cloud[:secret_access_key]})
 
-  if cloud_name == 'production'
     compute.describe_reserved_instances.body["reservedInstancesSet"].map do |ri|
       DB[:reservations].insert(
         :id => ri["reservedInstancesId"],
@@ -36,7 +35,7 @@ DB[:clouds].all.each do |cloud|
         :offering_type => ri["offeringType"],
       )
     end
-  else
+
     compute.servers.map do |i|
       if azmap.key? i.availability_zone
         az = azmap[i.availability_zone]
@@ -59,7 +58,6 @@ DB[:clouds].all.each do |cloud|
         :seen => now,
       )
     end
-  end
 end
 
 reservations.unshift ["Instance type", "Availability zone", "Instance count", "Start", "Duration (seconds)"]
