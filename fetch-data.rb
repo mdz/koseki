@@ -17,7 +17,9 @@ DB[:clouds].all.each do |cloud|
   puts "Scanning: #{cloud_name}"
 
   azmap = {}
-  Hash.new DB[:availability_zones].where(:cloud_id => cloud[:id]).map {|row| azmap[row[:logical]] = row[:physical]}
+  DB[:availability_zones].where(:cloud_id => cloud[:id]).map do |row|
+    azmap[row[:logical]] = row[:physical]
+  end
 
   compute = Fog::Compute.new({:provider => 'AWS',
     :aws_access_key_id => cloud[:access_key_id],
