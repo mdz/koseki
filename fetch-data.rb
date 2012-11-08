@@ -6,7 +6,6 @@ require 'mail'
 require 'sequel'
 
 DB = Sequel.connect(ENV['DATABASE_URL'])
-DB.extend Sequel::Postgres::HStore::DatabaseMethods
 
 reservations = []
 instances = {}

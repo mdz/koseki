@@ -4,7 +4,6 @@ require 'yaml'
 require 'sequel'
 
 DB = Sequel.connect(ENV['DATABASE_URL'])
-DB.extend Sequel::Postgres::HStore::DatabaseMethods
 
 
 DB.create_table :clouds do
