@@ -6,11 +6,10 @@ require 'mail'
 require 'sequel'
 
 DB = Sequel.connect(ENV['DATABASE_URL'])
+DB.extend Sequel::Postgres::HStore::DatabaseMethods
 
 reservations = []
 instances = {}
-
-unknown_azs = {}
 
 DB[:clouds].all.each do |cloud|
   cloud_name = cloud[:name]
@@ -27,11 +26,16 @@ DB[:clouds].all.each do |cloud|
 
   if cloud_name == 'production'
     compute.describe_reserved_instances.body["reservedInstancesSet"].map do |ri|
-      reservations << [ri["instanceType"],
-                azmap[ri["availabilityZone"]],
-                ri["instanceCount"],
-                ri["start"],
-                ri["duration"]]
+      DB[:reservations].insert(
+        :id => ri["reservedInstancesId"],
+        :cloud_id => cloud[:id],
+        :availability_zone => ri["availabilityZone"],
+        :instance_type => ri["instanceType"],
+        :instance_count => ri["instanceCount"],
+        :start => ri["start"],
+        :duration_seconds => ri["duration"],
+        :offering_type => ri["offeringType"],
+      )
     end
   else
     compute.servers.map do |i|
@@ -47,6 +51,14 @@ DB[:clouds].all.each do |cloud|
       instances[az] ||= {}
       instances[az][i.flavor_id] ||= 0
       instances[az][i.flavor_id] += 1
+      now = Time.now
+      DB[:running_instances].insert(
+        :cloud_id => cloud[:id],
+        :availability_zone => i.availability_zone,
+        :instance_type => i.flavor_id,
+        :created_at => i.created_at,
+        :seen => now,
+      )
     end
   end
 end

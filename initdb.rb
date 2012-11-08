@@ -4,16 +4,37 @@ require 'yaml'
 require 'sequel'
 
 DB = Sequel.connect(ENV['DATABASE_URL'])
+DB.extend Sequel::Postgres::HStore::DatabaseMethods
 
-DB.create_table! :clouds do
+
+DB.create_table :clouds do
   primary_key :id
   String :name
   String :access_key_id
   String :secret_access_key
 end
 
-DB.create_table! :availability_zones do
+DB.create_table :availability_zones do
   Integer :cloud_id
   String :logical
   String :physical
+end
+
+DB.create_table :reservations do
+  String :id, :primary_key => true
+  Integer :cloud_id
+  String :availability_zone
+  String :instance_type
+  String :instance_count
+  String :offering_type
+  DateTime :start
+  Integer :duration_seconds
+end
+
+DB.create_table :running_instances do
+  Integer :cloud_id
+  DateTime :seen
+  String :availability_zone
+  String :instance_type
+  DateTime :created_at
 end
