@@ -43,6 +43,7 @@ DB[:clouds].all.each do |cloud|
     now = Time.now
     DB[:running_instances].insert(
       :cloud_id => cloud[:id],
+      :instance_id => i.id,
       :availability_zone => i.availability_zone,
       :instance_type => i.flavor_id,
       :created_at => i.created_at,

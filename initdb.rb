@@ -32,6 +32,7 @@ end
 
 DB.create_table :running_instances do
   Integer :cloud_id
+  String :instance_id
   DateTime :seen
   String :availability_zone
   String :instance_type
