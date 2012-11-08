@@ -25,6 +25,7 @@ DB[:clouds].all.each do |cloud|
 
   num_reserved_instances = 0
   compute.describe_reserved_instances.body["reservedInstancesSet"].map do |ri|
+    next if DB[:reservations].where(:id => ri["reservedInstancesId"])
     DB[:reservations].insert(
       :id => ri["reservedInstancesId"],
       :cloud_id => cloud[:id],
