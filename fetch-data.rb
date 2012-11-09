@@ -58,7 +58,7 @@ for cloud in DB[:clouds].all
       matching = DB[:availability_zones].where({:key => key})
       if matching.count > 0
         # we've seen it before on another cloud, so copy the physical name from there
-        physical = matching.first["physical"]
+        physical = matching.first[:physical]
       else
         physical = "unknown-#{SecureRandom.uuid}"
       end
