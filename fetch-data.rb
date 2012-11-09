@@ -49,6 +49,7 @@ for cloud in DB[:clouds].all
       end
 
       az_to_key[az] = rio["reservedInstancesOfferingId"]
+    end
 
     az_to_key.each_pair do |az, key|
       # we already know about this AZ for this cloud
@@ -69,8 +70,6 @@ for cloud in DB[:clouds].all
         :key => key
       )
     end
-
-    next
 
     num_reservations = 0
     new_reservations = 0
