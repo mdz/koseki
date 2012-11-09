@@ -32,6 +32,42 @@ for cloud in DB[:clouds].all
       :aws_access_key_id => cloud[:access_key_id],
       :aws_secret_access_key => cloud[:secret_access_key]})
 
+    # discover availability zones and their mappings across accounts
+    # http://alestic.com/2009/07/ec2-availability-zones
+    seen_az = {}
+    rio = compute.describe_reserved_instances_offerings({
+      'instance-type' => 'm1.small',
+      'product-description' => 'Linux/UNIX',
+      }).body["reservedInstancesOfferingsSet"]
+      az = rio["availabilityZone"]
+      if !seen_az[az] and rio["instanceType"] == 'm1.small' and 
+        key = rio["reservedInstancesOfferingId"]
+
+        # only process each AZ once
+        seen_az[az] = true
+
+        # we already know about this AZ for this cloud
+        next if DB[:availability_zones].where(:cloud_id => cloud[:id], :key => key).count > 0
+
+        matching = DB[:availability_zones].where({:key => key} & ~:physical.like('unknown-%'))
+        if matching.count > 0
+          # copy the physical name from another cloud which has this same AZ
+          physical = matching.first["physical"]
+        else
+          physical = "unknown-#{SecureRandom.uuid}"
+        end
+
+        DB[:availability_zones].insert(
+          :cloud_id => cloud[:id],
+          :logical => az,
+          :physical => physical,
+          :key => key
+        )
+      end
+    end
+
+    next
+
     num_reservations = 0
     new_reservations = 0
     for ri in compute.describe_reserved_instances.body["reservedInstancesSet"]

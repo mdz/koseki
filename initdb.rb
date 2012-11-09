@@ -17,6 +17,7 @@ DB.create_table :availability_zones do
   Integer :cloud_id
   String :logical
   String :physical
+  String :key
 end
 
 DB.create_table :reservations do
