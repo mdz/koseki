@@ -24,22 +24,25 @@ DB[:clouds].all.each do |cloud|
     :aws_secret_access_key => cloud[:secret_access_key]})
 
   num_reservations = 0
+  new_reservations = 0
   compute.describe_reserved_instances.body["reservedInstancesSet"].map do |ri|
-    next if DB[:reservations].where(:id => ri["reservedInstancesId"]).count > 0
-    DB[:reservations].insert(
-      :id => ri["reservedInstancesId"],
-      :cloud_id => cloud[:id],
-      :availability_zone => ri["availabilityZone"],
-      :instance_type => ri["instanceType"],
-      :instance_count => ri["instanceCount"],
-      :start => ri["start"],
-      :duration_seconds => ri["duration"],
-      :offering_type => ri["offeringType"],
-    )
+    if DB[:reservations].where(:id => ri["reservedInstancesId"]).count == 0
+      DB[:reservations].insert(
+        :id => ri["reservedInstancesId"],
+        :cloud_id => cloud[:id],
+        :availability_zone => ri["availabilityZone"],
+        :instance_type => ri["instanceType"],
+        :instance_count => ri["instanceCount"],
+        :start => ri["start"],
+        :duration_seconds => ri["duration"],
+        :offering_type => ri["offeringType"],
+      )
+      new_reservations += 1
     num_reservations += 1
   end
 
   num_servers = 0
+  new_servers = 0
   now = Time.now
   compute.servers.map do |i|
     existing = DB[:running_instances].where(:instance_id => i.id)
@@ -54,9 +57,10 @@ DB[:clouds].all.each do |cloud|
         :created_at => i.created_at,
         :seen => now,
       )
+      new_servers += 1
     end
     num_servers += 1
   end
 
-  puts "cloud=#{cloud_name} at=finished num_servers=#{num_servers} num_reservations=#{num_reservations}"
+  puts "cloud=#{cloud_name} at=finished num_servers=#{num_servers} new_servers=#{new_servers} num_reservations=#{num_reservations} new_reservations=#{new_reservations)"
 end
