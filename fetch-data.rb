@@ -34,36 +34,40 @@ for cloud in DB[:clouds].all
 
     # discover availability zones and their mappings across accounts
     # http://alestic.com/2009/07/ec2-availability-zones
-    seen_az = {}
-    rio = compute.describe_reserved_instances_offerings({
+    az_to_key = {}
+    for rio in compute.describe_reserved_instances_offerings({
       'instance-type' => 'm1.small',
       'product-description' => 'Linux/UNIX',
-      }).body["reservedInstancesOfferingsSet"]
+      'duration' => 31536000,
+      }).body["reservedInstancesOfferingsSet"].select {|r| r["offeringType"] == "Medium Utilization"}
+
       az = rio["availabilityZone"]
-      if !seen_az[az] and rio["instanceType"] == 'm1.small' and 
-        key = rio["reservedInstancesOfferingId"]
-
-        # only process each AZ once
-        seen_az[az] = true
-
-        # we already know about this AZ for this cloud
-        next if DB[:availability_zones].where(:cloud_id => cloud[:id], :key => key).count > 0
-
-        matching = DB[:availability_zones].where({:key => key} & ~:physical.like('unknown-%'))
-        if matching.count > 0
-          # copy the physical name from another cloud which has this same AZ
-          physical = matching.first["physical"]
-        else
-          physical = "unknown-#{SecureRandom.uuid}"
-        end
-
-        DB[:availability_zones].insert(
-          :cloud_id => cloud[:id],
-          :logical => az,
-          :physical => physical,
-          :key => key
-        )
+      if az_to_key.has_key? az
+        # Probably AWS has added new criteria and we need a tighter filter above
+        puts "cloud=#{cloud_name} region=#{region} at=error error=\"can't determine AZ mappings (multiple matches for #{az})\""
+        break
       end
+
+      az_to_key[az] = rio["reservedInstancesOfferingId"]
+
+    az_to_key.each_pair do |az, key|
+      # we already know about this AZ for this cloud
+      next if DB[:availability_zones].where(:cloud_id => cloud[:id], :key => key).count > 0
+
+      matching = DB[:availability_zones].where({:key => key} & ~:physical.like('unknown-%'))
+      if matching.count > 0
+        # we've seen it before on another cloud, so copy the physical name from there
+        physical = matching.first["physical"]
+      else
+        physical = "unknown-#{SecureRandom.uuid}"
+      end
+
+      DB[:availability_zones].insert(
+        :cloud_id => cloud[:id],
+        :logical => az,
+        :physical => physical,
+        :key => key
+      )
     end
 
     next

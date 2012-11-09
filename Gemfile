@@ -1,6 +1,6 @@
 source :rubygems
 
-gem "fog"
+gem "fog", :git => "git://github.com/fog/fog.git"
 gem "rest-client"
 gem "mail"
 gem "sequel"
