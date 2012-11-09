@@ -40,8 +40,8 @@ DB[:clouds].all.each do |cloud|
   end
 
   num_servers = 0
+  now = Time.now
   compute.servers.map do |i|
-    now = Time.now
     DB[:running_instances].insert(
       :cloud_id => cloud[:id],
       :instance_id => i.id,
