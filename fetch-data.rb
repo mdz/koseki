@@ -25,7 +25,7 @@ DB[:clouds].all.each do |cloud|
 
   num_reserved_instances = 0
   compute.describe_reserved_instances.body["reservedInstancesSet"].map do |ri|
-    next if DB[:reservations].where(:id => ri["reservedInstancesId"])
+    next if DB[:reservations].where(:id => ri["reservedInstancesId"]).count > 0
     DB[:reservations].insert(
       :id => ri["reservedInstancesId"],
       :cloud_id => cloud[:id],
@@ -43,7 +43,7 @@ DB[:clouds].all.each do |cloud|
   now = Time.now
   compute.servers.map do |i|
     existing = DB[:running_instances].where(:instance_id => i.id)
-    if existing
+    if existing.count > 0
       existing.update(:seen => now)
     else
       DB[:running_instances].insert(
