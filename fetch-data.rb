@@ -11,7 +11,7 @@ reservations = []
 instances = {}
 regions = nil
 
-DB[:clouds].all.each do |cloud|
+for cloud in DB[:clouds].all
   cloud_name = cloud[:name]
   puts "cloud=#{cloud_name} at=starting"
 
@@ -34,7 +34,7 @@ DB[:clouds].all.each do |cloud|
 
     num_reservations = 0
     new_reservations = 0
-    compute.describe_reserved_instances.body["reservedInstancesSet"].map do |ri|
+    for ri in compute.describe_reserved_instances.body["reservedInstancesSet"]
       if DB[:reservations].where(:id => ri["reservedInstancesId"]).count == 0
         DB[:reservations].insert(
           :id => ri["reservedInstancesId"],
@@ -54,7 +54,7 @@ DB[:clouds].all.each do |cloud|
     num_servers = 0
     new_servers = 0
     now = Time.now
-    compute.servers.map do |i|
+    for i in compute.servers
       existing = DB[:running_instances].where(:instance_id => i.id)
       if existing.count > 0
         existing.update(:seen => now)
