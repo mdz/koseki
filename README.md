@@ -1,2 +1,1 @@
-This app is used to provide reserved instance data to SFDC finance to aid them
-in helping to manage our AWS bill
+This app is used to collect EC2 usage data to help manage AWS costs
