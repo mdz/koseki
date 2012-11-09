@@ -38,6 +38,7 @@ DB[:clouds].all.each do |cloud|
         :offering_type => ri["offeringType"],
       )
       new_reservations += 1
+    end
     num_reservations += 1
   end
 
