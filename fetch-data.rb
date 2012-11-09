@@ -42,14 +42,19 @@ DB[:clouds].all.each do |cloud|
   num_servers = 0
   now = Time.now
   compute.servers.map do |i|
-    DB[:running_instances].insert(
-      :cloud_id => cloud[:id],
-      :instance_id => i.id,
-      :availability_zone => i.availability_zone,
-      :instance_type => i.flavor_id,
-      :created_at => i.created_at,
-      :seen => now,
-    )
+    existing = DB[:running_instances].where(:instance_id => i.id)
+    if existing
+      existing.update(:seen => now)
+    else
+      DB[:running_instances].insert(
+        :cloud_id => cloud[:id],
+        :instance_id => i.id,
+        :availability_zone => i.availability_zone,
+        :instance_type => i.flavor_id,
+        :created_at => i.created_at,
+        :seen => now,
+      )
+    end
     num_servers += 1
   end
 
