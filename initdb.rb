@@ -38,3 +38,9 @@ DB.create_table :running_instances do
   String :instance_type
   DateTime :created_at
 end
+
+DB.create_table :instance_ondemand_pricing do
+  String :instance_type
+  String :region
+  Integer :price
+end
