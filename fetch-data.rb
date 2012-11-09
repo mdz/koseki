@@ -55,7 +55,7 @@ for cloud in DB[:clouds].all
       # we already know about this AZ for this cloud
       next if DB[:availability_zones].where(:cloud_id => cloud[:id], :key => key).count > 0
 
-      matching = DB[:availability_zones].where({:key => key} & ~:physical.like('unknown-%'))
+      matching = DB[:availability_zones].where({:key => key})
       if matching.count > 0
         # we've seen it before on another cloud, so copy the physical name from there
         physical = matching.first["physical"]
