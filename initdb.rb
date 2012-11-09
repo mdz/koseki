@@ -24,7 +24,7 @@ DB.create_table :reservations do
   Integer :cloud_id
   String :availability_zone
   String :instance_type
-  String :instance_count
+  Integer :instance_count
   String :offering_type
   DateTime :start
   Integer :duration_seconds
