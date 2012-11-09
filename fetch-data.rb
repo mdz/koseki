@@ -62,5 +62,5 @@ DB[:clouds].all.each do |cloud|
     num_servers += 1
   end
 
-  puts "cloud=#{cloud_name} at=finished num_servers=#{num_servers} new_servers=#{new_servers} num_reservations=#{num_reservations} new_reservations=#{new_reservations)"
+  puts "cloud=#{cloud_name} at=finished num_servers=#{num_servers} new_servers=#{new_servers} num_reservations=#{num_reservations} new_reservations=#{new_reservations}"
 end
