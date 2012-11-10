@@ -109,7 +109,7 @@ module Koseki
         end
 
         if i.last_seen != now
-          i.update(:last_seen => now, :tags => server.tags)
+          i.update(:last_seen => now, :running => server.state == 'running', :tags => server.tags)
         end
 
         count += 1
