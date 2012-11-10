@@ -74,25 +74,16 @@ class Controller
 
           key = offerings.first["reservedInstancesOfferingId"]
 
-          # check if we've seen another AZ with the same key
-          matching = @db[:availability_zones].where({:key => key})
-          if matching.count > 0
-            # we've seen it before on another cloud, so copy the physical name from there
-            availability_zone_id = matching.first[:id]
-          else
-            # globally new AZ
-            @db[:availability_zones].insert(
-              :name => "unknown-#{SecureRandom.uuid}",
-              :key => key,
-              :region => region,
-            )
-            availability_zone_id = @db[:availability_zones].where({:key => key}).first[:id]
+          az = Koseki::AvailabilityZone.find_or_create(:key => key) do |az|
+            az.name = "unknown-#{SecureRandom.uuid}"
+            az.key = key
+            az.region = region
           end
 
           @db[:availability_zone_mappings].insert(
             :cloud_id => cloud.id,
             :logical_az => logical_az,
-            :availability_zone_id => availability_zone_id,
+            :availability_zone_id => az.id,
           )
         end
       rescue Fog::Compute::AWS::Error => err
