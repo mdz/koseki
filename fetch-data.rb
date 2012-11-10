@@ -83,6 +83,7 @@ for cloud in DB[:clouds].all
       end
     rescue Fog::Compute::AWS::Error => err
       puts "cloud=#{cloud_name} region=#{region} at=error error=\"can't determine AZ mapping (no permission)\""
+      next
     end
 
     num_reservations = 0
