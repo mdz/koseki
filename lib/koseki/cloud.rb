@@ -102,11 +102,12 @@ module Koseki
           i.instance_type = server.flavor_id
           i.created_at = server.created_at
           i.last_seen = now
+          i.tags = Sequel.hstore(server.tags)
           new += 1
         end
 
         if i.last_seen != now
-          i.update(:last_seen => now)
+          i.update(:last_seen => now, :tags => server.tags)
         end
 
         count += 1
