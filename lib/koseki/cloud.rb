@@ -115,6 +115,8 @@ module Koseki
         count += 1
       end
 
+      # We just refreshed all of the instances in this region, so anythig we
+      # didn't see is gone
       expired = Koseki::Instance.where{last_seen < now}.where(:cloud_id => id, :running => true, :region => region)
       expired.update(:running => false)
 
