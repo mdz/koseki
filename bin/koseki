@@ -106,28 +106,28 @@ class Controller
         num_reservations += 1
       end
 
-      num_servers = 0
-      new_servers = 0
+      num_instances = 0
+      new_instances = 0
       now = Time.now
-      for i in compute.servers
-        existing = @db[:instances].where(:instance_id => i.id)
-        if existing.count > 0
-          existing.update(:last_seen => now)
-        else
-          @db[:instances].insert(
-            :cloud_id => cloud.id,
-            :instance_id => i.id,
-            :availability_zone => i.availability_zone,
-            :instance_type => i.flavor_id,
-            :created_at => i.created_at,
-            :last_seen => now,
-          )
-          new_servers += 1
+      for server in compute.servers
+        i = Koseki::Instance.find_or_create(:instance_id => server.id) do |i|
+          i.cloud_id = cloud.id
+          i.instance_id = server.id
+          i.availability_zone = server.availability_zone
+          i.instance_type = server.flavor_id
+          i.created_at = server.created_at
+          i.last_seen = now
+          new_instances += 1
         end
-        num_servers += 1
+
+        if i.last_seen != now
+          i.update(:last_seen => now)
+        end
+
+        num_instances += 1
       end
 
-      puts "cloud=#{cloud.name} region=#{region} at=finished num_servers=#{num_servers} new_servers=#{new_servers} num_reservations=#{num_reservations} new_reservations=#{new_reservations}"
+      puts "cloud=#{cloud.name} region=#{region} at=finished num_instances=#{num_instances} new_instances=#{new_instances} num_reservations=#{num_reservations} new_reservations=#{new_reservations}"
     end
 
     puts "cloud=#{cloud.name} at=finished"
@@ -190,6 +190,7 @@ class Controller
     end
 
     @db.create_table :instances do
+      primary_key :id
       foreign_key :cloud_id, :clouds
       String :instance_id, :null => false
       DateTime :last_seen, :null => false
