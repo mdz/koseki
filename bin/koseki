@@ -1,0 +1,133 @@
+#!/usr/bin/env ruby
+
+$:.unshift(File.expand_path(File.join(File.dirname(File.dirname($0)), "lib")))
+
+require "irb"
+require "irb/completion"
+
+require 'fog'
+require 'sequel'
+require 'amazon-pricing'
+require 'koseki/autoload'
+
+class Controller
+  def initialize
+    @db = Sequel.connect(ENV['DATABASE_URL'])
+  end
+
+  def poll_all_clouds
+    for cloud in clouds
+      poll_cloud(cloud)
+    end
+  end
+
+  def clouds
+    Koseki::Cloud.all
+  end
+
+  def poll_cloud(cloud)
+    puts "cloud=#{cloud.name} at=start"
+
+    for region in cloud.regions
+      puts "cloud=#{cloud.name} region=#{region} at=start"
+
+      cloud.discover_availability_zones(region)
+      cloud.discover_reserved_instances(region)
+      cloud.discover_instances(region)
+
+      puts "cloud=#{cloud.name} region=#{region} at=finish"
+    end
+
+    puts "cloud=#{cloud.name} at=finish"
+  end
+
+  def import_pricelist
+    regionmap = {
+      "us-east" => "us-east-1",
+      "apac-tokyo" => "ap-northeast-1",
+      "sa-east-1" => "sa-east-1",
+      "apac-sin" => "ap-southeast-1",
+      "us-west-2" => "us-west-2",
+      "us-west" => "us-west-1",
+      "eu-ireland" => "eu-west-1"
+    }
+
+    price_list = AwsPricing::PriceList.new
+
+    for region in price_list.regions
+      for instance_type in region.ec2_on_demand_instance_types
+        @db[:instance_ondemand_pricing].insert(
+          :region => regionmap[region.name], :instance_type => instance_type.api_name,
+          :price => instance_type.linux_price_per_hour * 1000
+        )
+      end
+    end
+  end
+
+  def initdb
+    @db.create_table :clouds do
+      primary_key :id
+      String :name, :unique => true
+      String :access_key_id, :null => false
+      String :secret_access_key, :null => false
+    end
+
+    @db.create_table :availability_zone_mappings do
+      foreign_key :cloud_id, :clouds
+      String :logical_az, :null => false
+      Integer :availability_zone_id, :null => false
+      unique ([:cloud_id, :logical_az])
+    end
+
+    @db.create_table :availability_zones do
+      primary_key :id
+      String :name, :unique => true
+      String :key, :unique => true
+      String :region, :null => false
+    end
+
+    @db.create_table :reservations do
+      String :id, :unique => true, :null => false
+      foreign_key :cloud_id, :clouds
+      String :availability_zone, :null => false
+      String :instance_type, :null => false
+      Integer :instance_count, :null => false
+      String :offering_type, :null => false
+      DateTime :start, :null => false
+      Integer :duration_seconds, :null => false
+    end
+
+    @db.create_table :instances do
+      primary_key :id
+      foreign_key :cloud_id, :clouds
+      String :instance_id, :null => false
+      DateTime :last_seen, :null => false
+      String :availability_zone, :null => false
+      String :instance_type, :null => false
+      DateTime :created_at, :null => false
+    end
+
+    @db.create_table :instance_ondemand_pricing do
+      String :instance_type, :null => false
+      String :region, :null => false
+      Integer :price, :null => false
+      unique ([:instance_type, :region])
+    end
+
+  end
+end
+
+case ARGV.first
+when 'console'
+  controller = Controller.new
+  ARGV.clear
+  IRB.start
+when 'poll'
+  Controller.new.poll_all_clouds
+when 'get-prices'
+  Controller.new.import_pricelist
+when 'initdb'
+  Controller.new.initdb
+else
+  raise "Unknown command"
+end
