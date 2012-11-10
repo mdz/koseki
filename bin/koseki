@@ -5,6 +5,7 @@ require "irb/completion"
 
 require 'fog'
 require 'sequel'
+require 'amazon-pricing'
 
 class Koseki
   def initialize
@@ -139,6 +140,29 @@ class Koseki
 
     puts "cloud=#{cloud_name} region=#{region} at=finished num_servers=#{num_servers} new_servers=#{new_servers} num_reservations=#{num_reservations} new_reservations=#{new_reservations}"
   end
+
+  def import_pricelist
+    regionmap = {
+      "us-east" => "us-east-1",
+      "apac-tokyo" => "ap-northeast-1",
+      "sa-east-1" => "sa-east-1",
+      "apac-sin" => "ap-southeast-1",
+      "us-west-2" => "us-west-2",
+      "us-west" => "us-west-1",
+      "eu-ireland" => "eu-west-1"
+    }
+
+    price_list = AwsPricing::PriceList.new
+
+    for region in price_list.regions
+      for instance_type in region.ec2_on_demand_instance_types
+        @db[:instance_ondemand_pricing].insert(
+          :region => regionmap[region.name], :instance_type => instance_type.api_name,
+          :price => instance_type.linux_price_per_hour * 1000
+        )
+      end
+    end
+  end
 end
 
 case ARGV.first
@@ -146,4 +170,6 @@ when 'console'
   IRB.start
 when 'poll'
   Koseki.new.poll_all_clouds
+when 'get-prices'
+  Koseki.new.import_pricelist
 end
