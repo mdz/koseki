@@ -1,8 +1,6 @@
 #!/usr/bin/env ruby
 
 require 'fog'
-require 'csv'
-require 'mail'
 require 'sequel'
 
 DB = Sequel.connect(ENV['DATABASE_URL'])
