@@ -8,26 +8,27 @@ DB = Sequel.connect(ENV['DATABASE_URL'])
 
 DB.create_table :clouds do
   primary_key :id
-  String :name
-  String :access_key_id
-  String :secret_access_key
+  String :name, :unique => true
+  String :access_key_id, :null => false
+  String :secret_access_key, :null => false
 end
 
 DB.create_table :availability_zone_mappings do
-  Integer :cloud_id
-  String :logical_az
-  String :physical_az
+  foreign_key :cloud_id, :clouds
+  String :logical_az, :null => false
+  Integer :availability_zone_id, :null => false
   unique ([:cloud_id, :logical_az])
 end
 
 DB.create_table :availability_zones do
-  String :name, :primary_key => true
+  primary_key :id
+  String :name, :unique => true
   String :key, :unique => true
 end
 
 DB.create_table :reservations do
   String :id, :primary_key => true
-  Integer :cloud_id
+  foreign_key :cloud_id, :clouds
   String :availability_zone
   String :instance_type
   Integer :instance_count
@@ -37,7 +38,7 @@ DB.create_table :reservations do
 end
 
 DB.create_table :instances do
-  Integer :cloud_id
+  foreign_key :cloud_id, :clouds
   String :instance_id
   DateTime :last_seen
   String :availability_zone

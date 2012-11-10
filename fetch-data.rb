@@ -66,20 +66,20 @@ for cloud in DB[:clouds].all
         matching = DB[:availability_zones].where({:key => key})
         if matching.count > 0
           # we've seen it before on another cloud, so copy the physical name from there
-          physical_az = matching.first[:name]
+          availability_zone_id = matching.first[:id]
         else
           # globally new AZ
-          physical_az = "unknown-#{SecureRandom.uuid}"
           DB[:availability_zones].insert(
-            :name => physical_az,
+            :name => "unknown-#{SecureRandom.uuid}",
             :key => key
           )
+          availability_zone_id = DB[:availability_zones].where({:key => key}).first[:id]
         end
 
         DB[:availability_zone_mappings].insert(
           :cloud_id => cloud[:id],
           :logical_az => logical_az,
-          :physical_az => physical_az,
+          :availability_zone_id => availability_zone_id,
         )
       end
     rescue Fog::Compute::AWS::Error => err
