@@ -71,7 +71,8 @@ for cloud in DB[:clouds].all
           # globally new AZ
           DB[:availability_zones].insert(
             :name => "unknown-#{SecureRandom.uuid}",
-            :key => key
+            :key => key,
+            :region => region,
           )
           availability_zone_id = DB[:availability_zones].where({:key => key}).first[:id]
         end
