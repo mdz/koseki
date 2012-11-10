@@ -13,6 +13,14 @@ module Koseki
       })
     end
 
+    def regions
+      # Use the default region to discover all others
+      @@regions ||= Fog::Compute.new({:provider => 'AWS',
+            :aws_access_key_id => access_key_id,
+            :aws_secret_access_key => secret_access_key})
+            .describe_regions.body["regionInfo"].map {|region| region["regionName"]}
+    end
+
     def discover_availability_zones(region)
       # http://alestic.com/2009/07/ec2-availability-zones
   

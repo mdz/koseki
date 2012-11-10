@@ -13,7 +13,6 @@ require 'koseki/autoload'
 class Controller
   def initialize
     @db = Sequel.connect(ENV['DATABASE_URL'])
-    @regions = nil
   end
 
   def poll_all_clouds
@@ -29,15 +28,7 @@ class Controller
   def poll_cloud(cloud)
     puts "cloud=#{cloud.name} at=start"
 
-    # Connect to the default region and get the list of available regions
-    if @regions == nil
-      @regions = Fog::Compute.new({:provider => 'AWS',
-            :aws_access_key_id => cloud.access_key_id,
-            :aws_secret_access_key => cloud.secret_access_key})
-            .describe_regions.body["regionInfo"].map {|region| region["regionName"]}
-    end
-
-    for region in @regions
+    for region in cloud.regions
       puts "cloud=#{cloud.name} region=#{region} at=start"
 
       cloud.discover_availability_zones(region)
