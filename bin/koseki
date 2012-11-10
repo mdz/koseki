@@ -1,13 +1,16 @@
 #!/usr/bin/env ruby
 
+$:.unshift(File.expand_path(File.join(File.dirname(File.dirname($0)), "lib")))
+
 require "irb"
 require "irb/completion"
 
 require 'fog'
 require 'sequel'
 require 'amazon-pricing'
+require 'koseki/autoload'
 
-class Koseki
+class Controller
   def initialize
     @db = Sequel.connect(ENV['DATABASE_URL'])
     @regions = nil
@@ -20,27 +23,26 @@ class Koseki
   end
 
   def clouds
-    @db[:clouds].all
+    Koseki::Cloud.all
   end
 
   def poll_cloud(cloud)
-    cloud_name = cloud[:name]
-    puts "cloud=#{cloud_name} at=starting"
+    puts "cloud=#{cloud.name} at=starting"
 
     # Connect to the default region and get the list of available regions
     if @regions == nil
       @regions = Fog::Compute.new({:provider => 'AWS',
-            :aws_access_key_id => cloud[:access_key_id],
-            :aws_secret_access_key => cloud[:secret_access_key]})
+            :aws_access_key_id => cloud.access_key_id,
+            :aws_secret_access_key => cloud.secret_access_key})
             .describe_regions.body["regionInfo"].map {|region| region["regionName"]}
     end
 
     for region in @regions
-      puts "cloud=#{cloud[:name]} region=#{region} at=starting"
+      puts "cloud=#{cloud.name} region=#{region} at=starting"
       compute = Fog::Compute.new({:provider => 'AWS',
         :region => region,
-        :aws_access_key_id => cloud[:access_key_id],
-        :aws_secret_access_key => cloud[:secret_access_key]
+        :aws_access_key_id => cloud.access_key_id,
+        :aws_secret_access_key => cloud.secret_access_key
       })
 
       # discover availability zones and their mappings across accounts
@@ -51,7 +53,7 @@ class Koseki
           logical_az = availability_zone["zoneName"]
 
           # check if we already have a mapping for this AZ
-          next if @db[:availability_zone_mappings].where(:cloud_id => cloud[:id], :logical_az => logical_az).count > 0
+          next if @db[:availability_zone_mappings].where(:cloud_id => cloud.id, :logical_az => logical_az).count > 0
 
           # find its key via reserved instance offerings
           offerings = compute.describe_reserved_instances_offerings({
@@ -62,11 +64,11 @@ class Koseki
           }).body["reservedInstancesOfferingsSet"].select {|r| r["offeringType"] == "Medium Utilization"}
 
           if offerings.length == 0
-            puts "cloud=#{cloud_name} region=#{region} at=error error=\"can't determine AZ mapping (no RIs available for #{logical_az}?)\""
+            puts "cloud=#{cloud.name} region=#{region} at=error error=\"can't determine AZ mapping (no RIs available for #{logical_az}?)\""
             next
           elsif offerings.length > 1
             # Probably AWS has added new criteria and we need a tighter filter above
-            puts "cloud=#{cloud_name} region=#{region} at=error error=\"can't determine AZ mapping (multiple matches for #{logical_az})\""
+            puts "cloud=#{cloud.name} region=#{region} at=error error=\"can't determine AZ mapping (multiple matches for #{logical_az})\""
             next
           end
 
@@ -88,13 +90,14 @@ class Koseki
           end
 
           @db[:availability_zone_mappings].insert(
-            :cloud_id => cloud[:id],
+            :cloud_id => cloud.id,
             :logical_az => logical_az,
             :availability_zone_id => availability_zone_id,
           )
         end
       rescue Fog::Compute::AWS::Error => err
-        puts "cloud=#{cloud_name} region=#{region} at=error error=\"can't determine AZ mapping (no permission)\""
+        puts "cloud=#{cloud.name} region=#{region} at=error error=\"can't determine AZ mapping (no permission)\""
+        next
       end
 
       num_reservations = 0
@@ -103,7 +106,7 @@ class Koseki
         if @db[:reservations].where(:id => ri["reservedInstancesId"]).count == 0
           @db[:reservations].insert(
             :id => ri["reservedInstancesId"],
-            :cloud_id => cloud[:id],
+            :cloud_id => cloud.id,
             :availability_zone => ri["availabilityZone"],
             :instance_type => ri["instanceType"],
             :instance_count => ri["instanceCount"],
@@ -125,7 +128,7 @@ class Koseki
           existing.update(:last_seen => now)
         else
           @db[:instances].insert(
-            :cloud_id => cloud[:id],
+            :cloud_id => cloud.id,
             :instance_id => i.id,
             :availability_zone => i.availability_zone,
             :instance_type => i.flavor_id,
@@ -138,7 +141,7 @@ class Koseki
       end
     end
 
-    puts "cloud=#{cloud_name} region=#{region} at=finished num_servers=#{num_servers} new_servers=#{new_servers} num_reservations=#{num_reservations} new_reservations=#{new_reservations}"
+    puts "cloud=#{cloud.name} region=#{region} at=finished num_servers=#{num_servers} new_servers=#{new_servers} num_reservations=#{num_reservations} new_reservations=#{new_reservations}"
   end
 
   def import_pricelist
@@ -220,9 +223,11 @@ case ARGV.first
 when 'console'
   IRB.start
 when 'poll'
-  Koseki.new.poll_all_clouds
+  Controller.new.poll_all_clouds
 when 'get-prices'
-  Koseki.new.import_pricelist
+  Controller.new.import_pricelist
 when 'initdb'
-  Koseki.new.initdb
+  Controller.new.initdb
+else
+  raise "Unknown command"
 end
