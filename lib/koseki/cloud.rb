@@ -58,5 +58,28 @@ module Koseki
       end
 
     end
+
+    def discover_reserved_instances(region)
+      puts "cloud=#{name} region=#{region} fn=discover_reserved_instances at=start"
+      count = 0
+      new = 0
+      for ri in compute(region).describe_reserved_instances.body["reservedInstancesSet"]
+        Reservation.find_or_create(:id => ri["reservedInstancesId"]) do |r|
+          r.id = ri["reservedInstancesId"]
+          r.cloud_id = id
+          r.availability_zone = ri["availabilityZone"]
+          r.instance_type = ri["instanceType"]
+          r.instance_count = ri["instanceCount"]
+          r.start = ri["start"]
+          r.duration_seconds = ri["duration"]
+          r.offering_type = ri["offeringType"]
+          new += 1
+        end
+        count += 1
+      end
+
+      puts "cloud=#{name} region=#{region} fn=discover_reserved_instances at=finish count=#{count} new=#{new}"
+    end
   end
+
 end
