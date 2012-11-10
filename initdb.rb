@@ -13,11 +13,16 @@ DB.create_table :clouds do
   String :secret_access_key
 end
 
-DB.create_table :availability_zones do
+DB.create_table :availability_zone_mappings do
   Integer :cloud_id
-  String :logical
-  String :physical
-  String :key
+  String :logical_az
+  String :physical_az
+  unique ([:cloud_id, :logical_az])
+end
+
+DB.create_table :availability_zones do
+  String :name, :primary_key => true
+  String :key, :unique => true
 end
 
 DB.create_table :reservations do
