@@ -102,6 +102,8 @@ module Koseki
           i.instance_type = server.flavor_id
           i.created_at = server.created_at
           i.last_seen = now
+          i.region = region
+          i.running = server.state == 'running'
           i.tags = Sequel.hstore(server.tags)
           new += 1
         end
@@ -113,7 +115,10 @@ module Koseki
         count += 1
       end
 
-      puts "cloud=#{name} region=#{region} fn=discover_instances at=finish count=#{count} new=#{new}"
+      expired = Koseki::Instance.where{last_seen < now}.where(:cloud_id => id, :running => true, :region => region)
+      expired.update(:running => false)
+
+      puts "cloud=#{name} region=#{region} fn=discover_instances at=finish count=#{count} new=#{new} expired=#{expired.count}"
     end
 
   end

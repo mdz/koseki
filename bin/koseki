@@ -107,6 +107,8 @@ class Controller
       foreign_key :cloud_id, :clouds
       String :instance_id, :null => false
       DateTime :last_seen, :null => false
+      Boolean :running, :null => false
+      String :region, :null => false
       String :availability_zone, :null => false
       String :instance_type, :null => false
       DateTime :created_at, :null => false
