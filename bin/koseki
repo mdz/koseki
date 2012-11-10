@@ -42,35 +42,9 @@ class Controller
 
       cloud.discover_availability_zones(region)
       cloud.discover_reserved_instances(region)
+      cloud.discover_instances(region)
 
-      compute = Fog::Compute.new({:provider => 'AWS',
-        :region => region,
-        :aws_access_key_id => cloud.access_key_id,
-        :aws_secret_access_key => cloud.secret_access_key
-      })
-
-      num_instances = 0
-      new_instances = 0
-      now = Time.now
-      for server in compute.servers
-        i = Koseki::Instance.find_or_create(:instance_id => server.id) do |i|
-          i.cloud_id = cloud.id
-          i.instance_id = server.id
-          i.availability_zone = server.availability_zone
-          i.instance_type = server.flavor_id
-          i.created_at = server.created_at
-          i.last_seen = now
-          new_instances += 1
-        end
-
-        if i.last_seen != now
-          i.update(:last_seen => now)
-        end
-
-        num_instances += 1
-      end
-
-      puts "cloud=#{cloud.name} region=#{region} at=finish num_instances=#{num_instances} new_instances=#{new_instances}"
+      puts "cloud=#{cloud.name} region=#{region} at=finish"
     end
 
     puts "cloud=#{cloud.name} at=finish"

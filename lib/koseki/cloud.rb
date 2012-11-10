@@ -80,6 +80,33 @@ module Koseki
 
       puts "cloud=#{name} region=#{region} fn=discover_reserved_instances at=finish count=#{count} new=#{new}"
     end
+
+    def discover_instances(region)
+      puts "cloud=#{name} region=#{region} fn=discover_instances at=start"
+      count = 0
+      new = 0
+      now = Time.now
+      for server in compute(region).servers
+        i = Koseki::Instance.find_or_create(:instance_id => server.id) do |i|
+          i.cloud_id = id
+          i.instance_id = server.id
+          i.availability_zone = server.availability_zone
+          i.instance_type = server.flavor_id
+          i.created_at = server.created_at
+          i.last_seen = now
+          new += 1
+        end
+
+        if i.last_seen != now
+          i.update(:last_seen => now)
+        end
+
+        count += 1
+      end
+
+      puts "cloud=#{name} region=#{region} fn=discover_instances at=finish count=#{count} new=#{new}"
+    end
+
   end
 
 end
