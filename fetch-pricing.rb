@@ -7,10 +7,20 @@ DB = Sequel.connect(ENV['DATABASE_URL'])
 
 price_list = AwsPricing::PriceList.new
 
+regionmap = {
+  "us-east" => "us-east-1",
+  "apac-tokyo" => "ap-northeast-1",
+  "sa-east-1" => "sa-east-1",
+  "apac-sin" => "ap-southeast-1",
+  "us-west-2" => "us-west-2",
+  "us-west" => "us-west-1",
+  "eu-ireland" => "eu-west-1"
+}
+
 for region in price_list.regions
   for instance_type in region.ec2_on_demand_instance_types
     DB[:instance_ondemand_pricing].insert(
-      :region => region.name, :instance_type => instance_type.api_name,
+      :region => regionmap[region.name], :instance_type => instance_type.api_name,
       :price => instance_type.linux_price_per_hour * 1000
     )
   end
