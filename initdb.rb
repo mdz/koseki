@@ -31,7 +31,7 @@ DB.create_table :reservations do
   Integer :duration_seconds
 end
 
-DB.create_table :running_instances do
+DB.create_table :instances do
   Integer :cloud_id
   String :instance_id
   DateTime :last_seen

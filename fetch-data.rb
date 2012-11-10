@@ -94,11 +94,11 @@ for cloud in DB[:clouds].all
     new_servers = 0
     now = Time.now
     for i in compute.servers
-      existing = DB[:running_instances].where(:instance_id => i.id)
+      existing = DB[:instances].where(:instance_id => i.id)
       if existing.count > 0
         existing.update(:last_seen => now)
       else
-        DB[:running_instances].insert(
+        DB[:instances].insert(
           :cloud_id => cloud[:id],
           :instance_id => i.id,
           :availability_zone => i.availability_zone,
