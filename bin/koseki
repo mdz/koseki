@@ -62,7 +62,7 @@ class Controller
           :instance_type => instance_type.api_name
         ) do |iop|
           iop.region = regionmap[region.name]
-          iop.instance_type => instance_type.api_name
+          iop.instance_type = instance_type.api_name
           iop.price = instance_type.linux_price_per_hour * 1000
         end
       end
