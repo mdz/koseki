@@ -55,6 +55,9 @@ class Controller
 
     price_list = AwsPricing::PriceList.new
 
+    Koseki::InstanceOndemandPrice.delete
+    Koseki::InstanceReservedPrice.delete
+
     for region in price_list.regions
       for instance_type in region.ec2_on_demand_instance_types
         Koseki::InstanceOndemandPrice.find_or_create(
@@ -67,6 +70,8 @@ class Controller
         end
       end
       for instance_type in region.ec2_reserved_instance_types(:medium)
+        next unless instance_type.prepay_1_year and instance_type.linux_price_per_hour_1_year
+
         irp = Koseki::InstanceReservedPrice.find_or_create(
           :region => regionmap[region.name],
           :instance_type => instance_type.api_name
