@@ -57,10 +57,21 @@ class Controller
 
     for region in price_list.regions
       for instance_type in region.ec2_on_demand_instance_types
-        @db[:instance_ondemand_pricing].insert(
+        @db[:instance_ondemand_prices].insert(
           :region => regionmap[region.name], :instance_type => instance_type.api_name,
           :price => instance_type.linux_price_per_hour * 1000
         )
+      end
+      for instance_type in region.ec2_reserved_instance_types(:medium)
+        irp = Koseki::InstanceReservedPrice.find_or_create(
+          :region => regionmap[region.name],
+          :instance_type => instance_type.api_name
+        ) do |irp|
+          irp.region = regionmap[region.name]
+          irp.instance_type = instance_type.api_name
+          irp.price_upfront = instance_type.prepay_1_year.to_f * 1000
+          irp.price_per_hour = instance_type.linux_price_per_hour_1_year.to_f * 1000
+        end
       end
     end
   end
@@ -115,10 +126,18 @@ class Controller
       HStore :tags
     end
 
-    @db.create_table :instance_ondemand_pricing do
+    @db.create_table :instance_ondemand_prices do
       String :instance_type, :null => false
       String :region, :null => false
       Integer :price, :null => false
+      unique ([:instance_type, :region])
+    end
+
+    @db.create_table :instance_reserved_prices do
+      String :instance_type, :null => false
+      String :region, :null => false
+      Integer :price_upfront, :null => false
+      Integer :price_per_hour, :null => false
       unique ([:instance_type, :region])
     end
 
