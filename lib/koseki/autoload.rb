@@ -5,4 +5,5 @@ module Koseki
   autoload :AvailabilityZoneMapping, "koseki/availability_zone_mapping"
   autoload :Instance, "koseki/instance"
   autoload :InstanceReservedPrice, "koseki/instance_reserved_price"
+  autoload :InstanceOndemandPrice, "koseki/instance_ondemand_price"
 end

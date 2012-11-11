@@ -57,10 +57,14 @@ class Controller
 
     for region in price_list.regions
       for instance_type in region.ec2_on_demand_instance_types
-        @db[:instance_ondemand_prices].insert(
-          :region => regionmap[region.name], :instance_type => instance_type.api_name,
-          :price => instance_type.linux_price_per_hour * 1000
-        )
+        Koseki::InstanceOndemandPrice.find_or_create(
+          :region => regionmap[region.name],
+          :instance_type => instance_type.api_name
+        ) do |iop|
+          iop.region = regionmap[region.name]
+          iop.instance_type => instance_type.api_name
+          iop.price = instance_type.linux_price_per_hour * 1000
+        end
       end
       for instance_type in region.ec2_reserved_instance_types(:medium)
         irp = Koseki::InstanceReservedPrice.find_or_create(
