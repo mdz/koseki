@@ -23,6 +23,8 @@ module Koseki
 
     def discover_availability_zones(region)
       # http://alestic.com/2009/07/ec2-availability-zones
+      #
+      puts "cloud=#{name} region=#{region} fn=discover_availability_zones at=start"
   
       for availability_zone in compute(region).describe_availability_zones.body["availabilityZoneInfo"]
         logical_az = availability_zone["zoneName"]
@@ -64,6 +66,7 @@ module Koseki
           next
         end
       end
+      puts "cloud=#{name} region=#{region} fn=discover_availability_zones at=finish"
 
     end
 
