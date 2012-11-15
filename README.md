@@ -7,6 +7,8 @@ There's currently no front end; it just collects data into the attached
 postgres database.  There are some interesting reports available as
 [dataclips](https://dataclips.heroku.com/) associated with its database.
 
-You can also do ad hoc queries with: ```
+You can also do ad hoc queries with:
+
+```
 $ heroku pg:psql -a koseki
 ```
