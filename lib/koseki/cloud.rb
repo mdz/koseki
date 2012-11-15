@@ -100,6 +100,8 @@ module Koseki
           i.instance_id = server.id
           i.availability_zone = server.availability_zone
           i.instance_type = server.flavor_id
+          i.private_ip_address = server.private_ip_address
+          i.public_ip_address = server.public_ip_address
           i.created_at = server.created_at
           i.last_seen = now
           i.region = region
@@ -109,7 +111,9 @@ module Koseki
         end
 
         if i.last_seen != now
-          i.update(:last_seen => now, :running => server.state == 'running', :tags => server.tags)
+          i.update(:last_seen => now, :running => server.state == 'running', :tags => server.tags,
+                   :private_ip_address => server.private_ip_address,
+                   :public_ip_address => server.public_ip_address)
         end
 
         count += 1

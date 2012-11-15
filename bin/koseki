@@ -131,6 +131,8 @@ class Controller
       String :region, :null => false
       String :availability_zone, :null => false
       String :instance_type, :null => false
+      String :private_ip_address
+      String :public_ip_address
       DateTime :created_at, :null => false
       HStore :tags
     end
