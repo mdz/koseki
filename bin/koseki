@@ -155,7 +155,7 @@ end
 
 case ARGV.first
 when 'console'
-  controller = Controller.new
+  $controller = Controller.new
   ARGV.clear
   IRB.start
 when 'poll'
