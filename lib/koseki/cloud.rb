@@ -103,7 +103,7 @@ module Koseki
           i.cloud_id = id
           i.instance_id = server.id
           i.logical_az = server.availability_zone
-          i.az_id = azmap r.logical_az
+          i.az_id = azmap i.logical_az
           i.instance_type = server.flavor_id
           i.private_ip_address = server.private_ip_address
           i.public_ip_address = server.public_ip_address
