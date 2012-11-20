@@ -62,7 +62,7 @@ module Koseki
             azm.availability_zone_id = az.id
           end
         rescue RuntimeError => err
-          puts "cloud=#{name} region=#{region} az=#{logical_az} at=error message=\"Can't determine AZ mapping: #{err}\""
+          puts "cloud=#{name} region=#{region} az=#{logical_az} at=warning message=\"Can't determine AZ mapping: #{err}\""
           next
         end
       end
