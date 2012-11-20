@@ -78,7 +78,8 @@ module Koseki
         Reservation.find_or_create(:id => ri["reservedInstancesId"]) do |r|
           r.id = ri["reservedInstancesId"]
           r.cloud_id = id
-          r.availability_zone = ri["availabilityZone"]
+          r.logical_az = ri["availabilityZone"]
+          r.az_id = azmap r.logical_az
           r.instance_type = ri["instanceType"]
           r.instance_count = ri["instanceCount"]
           r.start = ri["start"]
@@ -101,7 +102,8 @@ module Koseki
         i = Koseki::Instance.find_or_create(:instance_id => server.id) do |i|
           i.cloud_id = id
           i.instance_id = server.id
-          i.availability_zone = server.availability_zone
+          i.logical_az = server.availability_zone
+          i.az_id = azmap r.logical_az
           i.instance_type = server.flavor_id
           i.private_ip_address = server.private_ip_address
           i.public_ip_address = server.public_ip_address
@@ -128,6 +130,14 @@ module Koseki
       expired.update(:running => false)
 
       puts "cloud=#{name} region=#{region} fn=discover_instances at=finish count=#{count} new=#{new} expired=#{expired.count}"
+    end
+
+    def azmap
+      @@azmap ||= {}
+      for azm in Koseki::AvailabilityZoneMapping.where(:cloud_id => id)
+        @@azmap[azm.logical_az] = azm.az_id
+      end
+      @@azmap
     end
 
   end

@@ -100,7 +100,7 @@ class Controller
     @db.create_table :availability_zone_mappings do
       foreign_key :cloud_id, :clouds
       String :logical_az, :null => false
-      Integer :availability_zone_id, :null => false
+      foreign_key :az_id, :availability_zones
       unique ([:cloud_id, :logical_az])
     end
 
@@ -114,7 +114,8 @@ class Controller
     @db.create_table :reservations do
       String :id, :unique => true, :null => false
       foreign_key :cloud_id, :clouds
-      String :availability_zone, :null => false
+      String :logical_az, :null => false
+      foreign_key :az_id, :availability_zones
       String :instance_type, :null => false
       Integer :instance_count, :null => false
       String :offering_type, :null => false
@@ -129,7 +130,8 @@ class Controller
       DateTime :last_seen, :null => false
       Boolean :running, :null => false
       String :region, :null => false
-      String :availability_zone, :null => false
+      String :logical_az, :null => false
+      foreign_key :az_id, :availability_zones
       String :instance_type, :null => false
       String :private_ip_address
       String :public_ip_address
@@ -170,6 +172,8 @@ when 'unknown-azs'
   for az in Controller.new.unknown_azs
     puts az
   end
+when 'migrate-db'
+  system 'sequel', '-m', 'migrations', ENV['DATABASE_URL']
 else
   raise "Unknown command"
 end
