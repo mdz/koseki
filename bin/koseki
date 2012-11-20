@@ -97,18 +97,18 @@ class Controller
       String :secret_access_key, :null => false
     end
 
-    @db.create_table :availability_zone_mappings do
-      foreign_key :cloud_id, :clouds
-      String :logical_az, :null => false
-      foreign_key :az_id, :availability_zones
-      unique ([:cloud_id, :logical_az])
-    end
-
     @db.create_table :availability_zones do
       primary_key :id
       String :name, :unique => true
       String :key, :unique => true
       String :region, :null => false
+    end
+
+    @db.create_table :availability_zone_mappings do
+      foreign_key :cloud_id, :clouds
+      String :logical_az, :null => false
+      foreign_key :az_id, :availability_zones
+      unique ([:cloud_id, :logical_az])
     end
 
     @db.create_table :reservations do
