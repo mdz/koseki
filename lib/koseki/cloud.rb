@@ -18,6 +18,8 @@ module Koseki
       end
 
       def all
+        # we don't have permission to do describe-regions on every account,
+        # and we don't need to because the regions are the same everywhere
         @@region_names ||= @compute.describe_regions.body["regionInfo"]
         @@region_names.map do |region|
           Region.new(@cloud, region["regionName"])
