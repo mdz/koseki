@@ -19,8 +19,7 @@ class Controller
   def poll_all_clouds
     for cloud in clouds
       puts "cloud=#{cloud.name} at=start"
-      regions ||= cloud.regions
-      for region in regions
+      for region in cloud.regions
         puts "cloud=#{cloud.name} region=#{region.name} at=start"
         region.discover_all
         puts "cloud=#{cloud.name} region=#{region.name} at=finish"
