@@ -168,7 +168,7 @@ module Koseki
           count += 1
 
           if v.last_seen != now
-            v.update(:last_seen => now, :tags => Sequel::Postgres::HStore.new(v.tags))
+            v.update(:last_seen => now, :tags => Sequel::Postgres::HStore.new(volume.tags))
           end
         end
 
