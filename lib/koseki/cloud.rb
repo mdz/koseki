@@ -23,17 +23,17 @@ module Koseki
         end
       end
 
-      def discover_all
-        discover_availability_zones
-        discover_reserved_instances
-        discover_instances
-        discover_volumes
+      def refresh_all
+        refresh_availability_zones
+        refresh_reserved_instances
+        refresh_instances
+        refresh_volumes
       end
 
-      def discover_availability_zones
+      def refresh_availability_zones
         # http://alestic.com/2009/07/ec2-availability-zones
         #
-        puts "cloud=#{@cloud.name} region=#{name} fn=discover_availability_zones at=start"
+        puts "cloud=#{@cloud.name} region=#{name} fn=refresh_availability_zones at=start"
     
         for availability_zone in @compute.describe_availability_zones.body["availabilityZoneInfo"]
           logical_az = availability_zone["zoneName"]
@@ -75,12 +75,12 @@ module Koseki
             next
           end
         end
-        puts "cloud=#{@cloud.name} region=#{name} fn=discover_availability_zones at=finish"
+        puts "cloud=#{@cloud.name} region=#{name} fn=refresh_availability_zones at=finish"
 
       end
 
-      def discover_reserved_instances
-        puts "cloud=#{@cloud.name} region=#{name} fn=discover_reserved_instances at=start"
+      def refresh_reserved_instances
+        puts "cloud=#{@cloud.name} region=#{name} fn=refresh_reserved_instances at=start"
         count = 0
         new = 0
         for ri in @compute.describe_reserved_instances.body["reservedInstancesSet"]
@@ -99,11 +99,11 @@ module Koseki
           count += 1
         end
 
-        puts "cloud=#{@cloud.name} region=#{name} fn=discover_reserved_instances at=finish count=#{count} new=#{new}"
+        puts "cloud=#{@cloud.name} region=#{name} fn=refresh_reserved_instances at=finish count=#{count} new=#{new}"
       end
 
-      def discover_instances
-        puts "cloud=#{@cloud.name} region=#{name} fn=discover_instances at=start"
+      def refresh_instances
+        puts "cloud=#{@cloud.name} region=#{name} fn=refresh_instances at=start"
         count = 0
         new = 0
         now = Time.now
@@ -138,11 +138,11 @@ module Koseki
         expired = Koseki::Instance.where{last_seen < now}.where(:cloud_id => @cloud.id, :running => true, :region => name)
         expired.update(:running => false)
 
-        puts "cloud=#{@cloud.name} region=#{name} fn=discover_instances at=finish count=#{count} new=#{new} expired=#{expired.count}"
+        puts "cloud=#{@cloud.name} region=#{name} fn=refresh_instances at=finish count=#{count} new=#{new} expired=#{expired.count}"
       end
 
-      def discover_volumes
-        puts "cloud=#{@cloud.name} region=#{name} fn=discover_volumes at=start"
+      def refresh_volumes
+        puts "cloud=#{@cloud.name} region=#{name} fn=refresh_volumes at=start"
         
         new = 0
         count = 0
@@ -173,7 +173,7 @@ module Koseki
         expired = Koseki::Volume.where{last_seen < now}.where(:cloud_id => @cloud.id, :active => true, :region => name)
         expired.update(:active => false)
 
-        puts "cloud=#{@cloud.name} region=#{name} fn=discover_volumes at=finish count=#{count} new=#{new} expired=#{expired.count}"
+        puts "cloud=#{@cloud.name} region=#{name} fn=refresh_volumes at=finish count=#{count} new=#{new} expired=#{expired.count}"
       end
 
       def azmap

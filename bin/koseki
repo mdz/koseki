@@ -21,7 +21,7 @@ class Controller
       puts "cloud=#{cloud.name} at=start"
       for region in cloud.regions
         puts "cloud=#{cloud.name} region=#{region.name} at=start"
-        region.discover_all
+        region.refresh_all
         puts "cloud=#{cloud.name} region=#{region.name} at=finish"
       end
       puts "cloud=#{cloud.name} at=finish"
