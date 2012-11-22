@@ -132,6 +132,41 @@ module Koseki
       puts "cloud=#{name} region=#{region} fn=discover_instances at=finish count=#{count} new=#{new} expired=#{expired.count}"
     end
 
+    def discover_volumes(region)
+      puts "cloud=#{name} region=#{region} fn=discover_volumes at=start"
+      
+      new = 0
+      count = 0
+      now = Time.now
+      for volume in compute(region).volumes.all
+        v = Koseki::Volume.find_or_create(:volume_id => volume.id) do |v|
+          v.cloud_id = id
+          v.region = region
+          v.logical_az = volume.availability_zone
+          v.az_id = azmap[v.logical_az]
+          v.server_id = volume.server_id
+          #v.instance_id = Koseki::Instance[:instance_id => v.instance_id].id
+          v.created_at = volume.created_at
+          v.last_seen = now
+          v.size = volume.size
+          v.active = volume.state != 'deleted'
+          new += 1
+        end
+        count += 1
+
+        if v.last_seen != now
+          v.update(:last_seen => now)
+        end
+      end
+
+      # We just refreshed all of the volumes in this region, so anything we
+      # didn't see is gone
+      expired = Koseki::Volume.where{last_seen < now}.where(:cloud_id => id, :active => true, :region => region)
+      expired.update(:active => false)
+
+      puts "cloud=#{name} region=#{region} fn=discover_volumes at=finish count=#{count} new=#{new} expired=#{expired.count}"
+    end
+
     def azmap
       @@azmap ||= {}
       for azm in Koseki::AvailabilityZoneMapping.where(:cloud_id => id)

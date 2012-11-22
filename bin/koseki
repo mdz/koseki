@@ -35,6 +35,7 @@ class Controller
       cloud.discover_availability_zones(region)
       cloud.discover_reserved_instances(region)
       cloud.discover_instances(region)
+      cloud.discover_volumes(region)
 
       puts "cloud=#{cloud.name} region=#{region} at=finish"
     end
@@ -152,6 +153,21 @@ class Controller
       Integer :price_upfront, :null => false
       Integer :price_per_hour, :null => false
       unique ([:instance_type, :region])
+    end
+
+    @db.create_table :volumes do
+      primary_key :id
+      String :volume_id, :null => false, :unique => true
+      foreign_key :cloud_id, :clouds
+      String :region, :null => false
+      String :logical_az, :null => false
+      foreign_key :az_id, :availability_zones
+      DateTime :created_at, :null => false
+      DateTime :last_seen, :null => false
+      String :server_id
+      Boolean :active, :null => false
+      Integer :size, :null => false
+      HStore :tags
     end
 
   end
