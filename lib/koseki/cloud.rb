@@ -123,12 +123,12 @@ module Koseki
             i.last_seen = now
             i.region = name
             i.running = server.state == 'running'
-            i.tags = Sequel.hstore(server.tags)
+            i.tags = Sequel::Postgres::HStore.new(server.tags)
             new += 1
           end
 
           if i.last_seen != now
-            i.update(:last_seen => now, :running => server.state == 'running', :tags => Sequel.hstore(server.tags),
+            i.update(:last_seen => now, :running => server.state == 'running', :tags => Sequel::Postgres::HStore.new(server.tags),
                      :private_ip_address => server.private_ip_address,
                      :public_ip_address => server.public_ip_address)
           end
@@ -162,13 +162,13 @@ module Koseki
             v.last_seen = now
             v.size = volume.size
             v.active = volume.state != 'deleted'
-            v.tags = Sequel.hstore(volume.tags)
+            v.tags = Sequel::Postgres::HStore.new(volume.tags)
             new += 1
           end
           count += 1
 
           if v.last_seen != now
-            v.update(:last_seen => now, :tags => Sequel.hstore(v.tags))
+            v.update(:last_seen => now, :tags => Sequel::Postgres::HStore.new(v.tags))
           end
         end
 
