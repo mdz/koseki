@@ -18,29 +18,18 @@ class Controller
 
   def poll_all_clouds
     for cloud in clouds
-      poll_cloud(cloud)
+      puts "cloud=#{cloud.name} at=start"
+      for region in cloud.regions
+        puts "cloud=#{cloud.name} region=#{region.name} at=start"
+        region.discover_all
+        puts "cloud=#{cloud.name} region=#{region.name} at=finish"
+      end
+      puts "cloud=#{cloud.name} at=finish"
     end
   end
 
   def clouds
     Koseki::Cloud.all
-  end
-
-  def poll_cloud(cloud)
-    puts "cloud=#{cloud.name} at=start"
-
-    for region in cloud.regions
-      puts "cloud=#{cloud.name} region=#{region} at=start"
-
-      cloud.discover_availability_zones(region)
-      cloud.discover_reserved_instances(region)
-      cloud.discover_instances(region)
-      cloud.discover_volumes(region)
-
-      puts "cloud=#{cloud.name} region=#{region} at=finish"
-    end
-
-    puts "cloud=#{cloud.name} at=finish"
   end
 
   def import_pricelist
