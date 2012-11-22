@@ -61,7 +61,7 @@ module Koseki
               key = offerings.first["reservedInstancesOfferingId"]
 
               az = Koseki::AvailabilityZone.find_or_create(:key => key) do |az|
-                az.name = "unknown-#{SecureRandom.uuid}"
+                az.name = "#{@cloud.name}-#{logical_az}"
                 az.key = key
                 az.region = name
               end
