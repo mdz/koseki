@@ -162,12 +162,13 @@ module Koseki
             v.last_seen = now
             v.size = volume.size
             v.active = volume.state != 'deleted'
+            v.tags = Sequel.hstore(volume.tags)
             new += 1
           end
           count += 1
 
           if v.last_seen != now
-            v.update(:last_seen => now)
+            v.update(:last_seen => now, :tags => Sequel.hstore(v.tags))
           end
         end
 
