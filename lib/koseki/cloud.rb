@@ -18,7 +18,8 @@ module Koseki
       end
 
       def all
-        @compute.describe_regions.body["regionInfo"].map do |region|
+        @@region_names ||= @compute.describe_regions.body["regionInfo"]
+        @@region_names.map do |region|
           Region.new(@cloud, region["regionName"])
         end
       end
