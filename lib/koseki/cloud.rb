@@ -128,6 +128,7 @@ module Koseki
           end
 
           if i.last_seen != now
+            # if we found an existing record, update it
             i.update(:last_seen => now, :running => server.state == 'running', :tags => Sequel::Postgres::HStore.new(server.tags),
                      :private_ip_address => server.private_ip_address,
                      :public_ip_address => server.public_ip_address)
@@ -137,7 +138,7 @@ module Koseki
         end
 
         # We just refreshed all of the instances in this region, so anything we
-        # didn't see is gone
+        # didn't see in this run is gone
         expired = Koseki::Instance.where{last_seen < now}.where(:cloud_id => @cloud.id, :running => true, :region => name)
         expired.update(:running => false)
 
@@ -168,12 +169,13 @@ module Koseki
           count += 1
 
           if v.last_seen != now
+            # if we found an existing record, update it
             v.update(:last_seen => now, :tags => Sequel::Postgres::HStore.new(volume.tags))
           end
         end
 
         # We just refreshed all of the volumes in this region, so anything we
-        # didn't see is gone
+        # didn't see in this run is gone
         expired = Koseki::Volume.where{last_seen < now}.where(:cloud_id => @cloud.id, :active => true, :region => name)
         expired.update(:active => false)
 
