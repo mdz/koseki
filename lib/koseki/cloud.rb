@@ -186,7 +186,7 @@ module Koseki
     end
 
     def regions
-      @@regions ||= Region.new(self).all
+      @regions ||= Region.new(self).all
     end
 
   end
