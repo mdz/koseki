@@ -128,7 +128,7 @@ module Koseki
           end
 
           if i.last_seen != now
-            i.update(:last_seen => now, :running => server.state == 'running', :tags => server.tags,
+            i.update(:last_seen => now, :running => server.state == 'running', :tags => Sequel.hstore(server.tags),
                      :private_ip_address => server.private_ip_address,
                      :public_ip_address => server.public_ip_address)
           end
