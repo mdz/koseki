@@ -30,10 +30,7 @@ module Koseki
         refresh_availability_zones
         refresh_reserved_instances
         refresh_instances
-        if @cloud.name == 'shogun' or @cloud.name == 'us-east-1'
-          # XXX remove this guard once we can do DescribeVolumes for all clouds
-          refresh_volumes
-        end
+        refresh_volumes
       end
 
       def refresh_availability_zones
