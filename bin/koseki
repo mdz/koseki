@@ -16,8 +16,10 @@ class Controller
     @db.extension :pg_hstore
   end
 
-  def poll_all_clouds
+  def poll_clouds(cloud_names=nil)
     for cloud in clouds
+      next if cloud_names and not cloud_names.empty? and not cloud_names.include? cloud.name
+
       puts "cloud=#{cloud.name} at=start"
       for region in cloud.regions
         puts "cloud=#{cloud.name} region=#{region.name} at=start"
@@ -168,7 +170,7 @@ when 'console'
   ARGV.clear
   IRB.start
 when 'poll'
-  Controller.new.poll_all_clouds
+  Controller.new.poll_clouds(ARGV[1..-1])
 when 'get-prices'
   Controller.new.import_pricelist
 when 'initdb'
