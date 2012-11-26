@@ -4,11 +4,4 @@ mappings on each of the accounts it knows about.  It also keeps a historical
 record of instances which have since been terminated.
 
 There's currently no front end; it just collects data into the attached
-postgres database.  There are some interesting reports available as
-[dataclips](https://dataclips.heroku.com/) associated with its database.
-
-You can also do ad hoc queries with:
-
-```
-$ heroku pg:psql -a koseki
-```
+postgres database.
