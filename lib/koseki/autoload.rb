@@ -7,4 +7,5 @@ module Koseki
   autoload :Volume, "koseki/volume"
   autoload :InstanceReservedPrice, "koseki/instance_reserved_price"
   autoload :InstanceOndemandPrice, "koseki/instance_ondemand_price"
+  autoload :EBSPrice, "koseki/ebs_price"
 end

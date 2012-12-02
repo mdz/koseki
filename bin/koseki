@@ -78,6 +78,15 @@ class Controller
           irp.price_per_hour = instance_type.linux_price_per_hour_1_year.to_f * 1000
         end
       end
+      ebs = Koseki::EBSPrice.find_or_create(
+        :region => regionmap[region.name]
+      ) do |ebs|
+        ebs.standard_per_gb = region.ebs_price.standard_per_gb * 1000
+        ebs.standard_per_million_io = region.ebs_price.standard_per_million_io * 1000
+        ebs.preferred_per_gb = region.ebs_price.preferred_per_gb * 1000 rescue nil
+        ebs.preferred_per_iops = region.ebs_price.preferred_per_iops * 1000 rescue nil
+        ebs.s3_snaps_per_gb = region.ebs_price.s3_snaps_per_gb * 1000
+      end
     end
   end
 
@@ -163,6 +172,16 @@ class Controller
       Boolean :active, :null => false
       Integer :size, :null => false
       HStore :tags
+    end
+
+    @db.create_table :ebs_prices do
+      String :region, :null => false
+      Integer :standard_per_gb
+      Integer :standard_per_million_io
+      Integer :preferred_per_gb
+      Integer :preferred_per_million_io
+      Integer :preferred_per_iops
+      Integer :s3_snaps_per_gb
     end
 
   end
