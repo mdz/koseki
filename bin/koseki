@@ -51,6 +51,9 @@ class Controller
     Koseki::InstanceReservedPrice.delete
 
     for region in price_list.regions
+      if not regionmap.has_key? region.name
+        raise "Unknown region: #{region.name}"
+      end
       for instance_type in region.ec2_on_demand_instance_types
         Koseki::InstanceOndemandPrice.find_or_create(
           :region => regionmap[region.name],
