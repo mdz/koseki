@@ -91,10 +91,6 @@ class Controller
     end
   end
 
-  def unknown_azs
-    @db["SELECT clouds.name AS cloud, instances.availability_zone, count(*) from instances INNER JOIN clouds ON clouds.id = instances.cloud_id left join availability_zone_mappings on (instances.availability_zone = availability_zone_mappings.logical_az and availability_zone_mappings.cloud_id = instances.cloud_id) where availability_zone_mappings.availability_zone_id is null group by clouds.name, instances.availability_zone"]
-  end
-
   def initdb
     @db.create_table :clouds do
       primary_key :id
