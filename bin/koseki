@@ -43,7 +43,8 @@ class Controller
       "us-west-2" => "us-west-2",
       "us-west" => "us-west-1",
       "eu-ireland" => "eu-west-1",
-      "apac-syd" => "ap-southeast-2"
+      "apac-syd" => "ap-southeast-2",
+      "ap-southeast-2" => "ap-southeast-2"
     }
 
     price_list = AwsPricing::PriceList.new
