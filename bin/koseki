@@ -97,6 +97,7 @@ class Controller
       String :name, :unique => true
       String :access_key_id, :null => false
       String :secret_access_key, :null => false
+      String :programmatic_billing_bucket
     end
 
     @db.create_table :availability_zones do
