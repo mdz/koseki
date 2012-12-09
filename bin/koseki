@@ -124,6 +124,8 @@ class Controller
       String :offering_type, :null => false
       DateTime :start, :null => false
       Integer :duration_seconds, :null => false
+      Integer :fixed_price, :null => false
+      Integer :usage_price, :null => false
     end
 
     @db.create_table :instances do
