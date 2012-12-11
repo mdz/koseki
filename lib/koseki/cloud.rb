@@ -12,7 +12,8 @@ module Koseki
         @compute = Fog::Compute.new({:provider => 'AWS',
           :region => region,
           :aws_access_key_id => cloud.access_key_id,
-          :aws_secret_access_key => cloud.secret_access_key
+          :aws_secret_access_key => cloud.secret_access_key,
+          :version => '2012-10-01'
         })
         @name = @compute.region
       end
@@ -97,6 +98,8 @@ module Koseki
             r.start = ri["start"]
             r.duration_seconds = ri["duration"]
             r.offering_type = ri["offeringType"]
+            r.fixed_price = ri["fixedPrice"]
+            r.usage_price = ri["usagePrice"]
             new += 1
           end
           count += 1
