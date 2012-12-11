@@ -185,10 +185,10 @@ class Controller
       Integer :s3_snaps_per_gb
     end
 
-    @db.create_view(:active_reservations, "select az_id, instance_type, sum(instance_count) as instance_count
+    @db.create_view(:active_reservations, "select az_id, instance_type, sum(instance_count) as instance_count, fixed_price, usage_price
 from reservations
 where now() < start + (duration_seconds*'1 second'::interval)
-group by az_id, instance_type;")
+group by az_id, instance_type, fixed_price, usage_price;")
 
     @db.create_view(:instance_usage, "WITH
 running AS (
