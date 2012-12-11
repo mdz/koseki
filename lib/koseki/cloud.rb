@@ -99,7 +99,7 @@ module Koseki
             r.duration_seconds = ri["duration"]
             r.offering_type = ri["offeringType"]
             r.fixed_price = ri["fixedPrice"]
-            r.usage_price = ri["usagePrice"]
+            r.usage_price = ri["usagePrice"] * 1000
             new += 1
           end
           count += 1
