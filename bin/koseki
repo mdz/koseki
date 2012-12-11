@@ -140,6 +140,7 @@ class Controller
       String :instance_type, :null => false
       String :private_ip_address
       String :public_ip_address
+      String :reservation_id
       DateTime :created_at, :null => false
       HStore :tags
     end
