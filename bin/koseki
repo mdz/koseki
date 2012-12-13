@@ -185,22 +185,22 @@ class Controller
       Integer :s3_snaps_per_gb
     end
 
-    @db.create_view(:active_reservations, "select az_id, instance_type, sum(instance_count) as instance_count, fixed_price, usage_price, duration_seconds
+    @db.create_view(:active_reservations, "select logical_az, instance_type, sum(instance_count) as instance_count, fixed_price, usage_price, duration_seconds
 from reservations
 where now() < start + (duration_seconds*'1 second'::interval)
-group by az_id, instance_type, fixed_price, usage_price, duration_seconds;")
+group by logical_az, instance_type, fixed_price, usage_price, duration_seconds;")
 
     @db.create_view(:instance_usage, "WITH
 running AS (
-  SELECT instance_type, region, az_id, count(instances.*) AS instance_count
+  SELECT instance_type, region, logical_az, az_id, count(instances.*) AS instance_count
   FROM instances
   WHERE running = true
-  GROUP BY region, az_id, instance_type
+  GROUP BY region, logical_az, az_id, instance_type
 ),
 reserved AS (
-  SELECT az_id, instance_type, sum(instance_count) AS instance_count
+  SELECT logical_az, instance_type, sum(instance_count) AS instance_count
   FROM active_reservations
-  GROUP BY az_id, instance_type
+  GROUP BY logical_az, instance_type
 ),
 usage AS (
   SELECT availability_zones.region, running.az_id, running.instance_type, running.instance_count AS total_running, coalesce(reserved.instance_count,0) AS total_reserved,
@@ -211,6 +211,57 @@ usage AS (
     LEFT JOIN availability_zones ON (availability_zones.id = running.az_id)
 )
 SELECT * from usage;")
+
+  @db.create_view(:instance_costs, "
+WITH
+running AS (
+  SELECT instance_type, region, logical_az, count(instances.*) AS instance_count
+  FROM instances
+  WHERE running = true
+  GROUP BY region, logical_az, instance_type
+),
+reserved AS (
+  SELECT logical_az, instance_type, sum(instance_count) AS instance_count
+  FROM active_reservations
+  GROUP BY logical_az, instance_type
+),
+usage AS (
+  SELECT running.region, running.logical_az, running.instance_type, running.instance_count AS total_running, coalesce(reserved.instance_count,0) AS total_reserved,
+    least(running.instance_count, coalesce(reserved.instance_count,0)) AS running_reserved,
+    running.instance_count - least(running.instance_count, coalesce(reserved.instance_count,0)) AS running_ondemand
+  FROM running
+    LEFT JOIN reserved USING (logical_az, instance_type)
+),
+reserved_costs_raw AS (
+  select region, instance_type, logical_az, running_reserved, instance_count AS reservations_at_this_price, usage_price,
+    greatest(0,least(instance_count, running_reserved - coalesce(sum(instance_count) OVER previous_matching_reservations,0))) AS instances
+  from usage
+    inner join active_reservations using (logical_az, instance_type)
+  where running_reserved > 0
+  window previous_matching_reservations AS (PARTITION BY logical_az, instance_type ORDER BY usage_price ASC ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING)
+
+),
+reserved_costs AS (
+  select region, logical_az, instance_type, sum(instances) AS instances,
+    usage_price AS hourly_cost_per_instance
+  from reserved_costs_raw
+  group by region, logical_az, instance_type, hourly_cost_per_instance
+),
+ondemand_costs AS (
+  select region, logical_az, instance_type, sum(running_ondemand) AS instances,
+    instance_ondemand_prices.price AS hourly_cost_per_instance
+  from usage
+    left join instance_ondemand_prices USING (instance_type, region)
+  where running_ondemand > 0
+  group by region, logical_az, instance_type, instance_ondemand_prices.price
+),
+merged_costs AS (
+  select *, 'reserved' as pricing from reserved_costs
+    UNION ALL
+  select *, 'ondemand' as pricing from ondemand_costs
+)
+SELECT * from merged_costs
+;")
 
   end
 end
