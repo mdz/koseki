@@ -190,28 +190,6 @@ from reservations
 where now() < start + (duration_seconds*'1 second'::interval)
 group by logical_az, instance_type, fixed_price, usage_price, duration_seconds;")
 
-    @db.create_view(:instance_usage, "WITH
-running AS (
-  SELECT instance_type, region, logical_az, az_id, count(instances.*) AS instance_count
-  FROM instances
-  WHERE running = true
-  GROUP BY region, logical_az, az_id, instance_type
-),
-reserved AS (
-  SELECT logical_az, instance_type, sum(instance_count) AS instance_count
-  FROM active_reservations
-  GROUP BY logical_az, instance_type
-),
-usage AS (
-  SELECT availability_zones.region, running.az_id, running.instance_type, running.instance_count AS total_running, coalesce(reserved.instance_count,0) AS total_reserved,
-    least(running.instance_count, coalesce(reserved.instance_count,0)) AS running_reserved,
-    running.instance_count - least(running.instance_count, coalesce(reserved.instance_count,0)) AS running_ondemand
-  FROM running
-    LEFT JOIN reserved USING (az_id, instance_type)
-    LEFT JOIN availability_zones ON (availability_zones.id = running.az_id)
-)
-SELECT * from usage;")
-
   @db.create_view(:instance_costs, "
 WITH
 running AS (
