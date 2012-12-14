@@ -31,6 +31,13 @@ class Controller
     end
   end
 
+  def poll_clouds_forever(cloud_names=nil)
+    while true
+      poll_clouds cloud_names
+      sleep 5
+    end
+  end
+
   def clouds
     Koseki::Cloud.all
   end
@@ -110,6 +117,10 @@ class Controller
     end
   end
 
+  def migratedb
+    system 'sequel', '-m', 'migrations', ENV['DATABASE_URL']
+  end
+
   def initdb
     @db.create_table :clouds do
       primary_key :id
@@ -136,6 +147,7 @@ class Controller
     @db.create_table :reservations do
       String :id, :unique => true, :null => false
       foreign_key :cloud_id, :clouds
+      String :region, :null => false
       String :logical_az, :null => false
       foreign_key :az_id, :availability_zones
       String :instance_type, :null => false
@@ -205,10 +217,10 @@ class Controller
       Integer :s3_snaps_per_gb
     end
 
-    @db.create_view(:active_reservations, "select logical_az, instance_type, sum(instance_count) as instance_count, fixed_price, usage_price, duration_seconds
+    @db.create_view(:active_reservations, "select region, logical_az, instance_type, sum(instance_count) as instance_count, fixed_price, usage_price, duration_seconds
 from reservations
 where now() < start + (duration_seconds*'1 second'::interval)
-group by logical_az, instance_type, fixed_price, usage_price, duration_seconds;")
+group by region, logical_az, instance_type, fixed_price, usage_price, duration_seconds;")
 
   @db.create_view(:instance_costs, "
 WITH
@@ -232,22 +244,26 @@ usage AS (
 ),
 reserved_costs_raw AS (
   select region, instance_type, logical_az, running_reserved, instance_count AS reservations_at_this_price, usage_price,
+    fixed_price,
+    duration_seconds,
     greatest(0,least(instance_count, running_reserved - coalesce(sum(instance_count) OVER previous_matching_reservations,0))) AS instances
   from usage
-    inner join active_reservations using (logical_az, instance_type)
+    inner join active_reservations using (region, logical_az, instance_type)
   where running_reserved > 0
-  window previous_matching_reservations AS (PARTITION BY logical_az, instance_type ORDER BY usage_price ASC ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING)
+  window previous_matching_reservations AS (PARTITION BY region, logical_az, instance_type ORDER BY usage_price ASC ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING)
 
 ),
 reserved_costs AS (
   select region, logical_az, instance_type, sum(instances) AS instances,
-    usage_price AS hourly_cost_per_instance
+    usage_price AS hourly_cost_per_instance,
+    fixed_price / (duration_seconds/2628000) AS monthly_ri_amort_per_instance
   from reserved_costs_raw
-  group by region, logical_az, instance_type, hourly_cost_per_instance
+  group by region, logical_az, instance_type, hourly_cost_per_instance, monthly_ri_amort_per_instance
 ),
 ondemand_costs AS (
   select region, logical_az, instance_type, sum(running_ondemand) AS instances,
-    instance_ondemand_prices.price AS hourly_cost_per_instance
+    instance_ondemand_prices.price AS hourly_cost_per_instance,
+    0 AS monthly_cost_per_instance
   from usage
     left join instance_ondemand_prices USING (instance_type, region)
   where running_ondemand > 0
@@ -259,7 +275,8 @@ merged_costs AS (
   select *, 'ondemand' as pricing from ondemand_costs
 )
 SELECT * from merged_costs
-;")
+WHERE instances > 0;
+")
 
   end
 end
@@ -271,12 +288,14 @@ when 'console'
   IRB.start
 when 'poll'
   Controller.new.poll_clouds(ARGV[1..-1])
+when 'poll-forever'
+  Controller.new.poll_clouds_forever(ARGV[1..-1])
 when 'get-prices'
   Controller.new.import_pricelist
 when 'initdb'
   Controller.new.initdb
 when 'migrate-db'
-  system 'sequel', '-m', 'migrations', ENV['DATABASE_URL']
+  Controller.new.migratedb
 when 'sync-devclouds'
   Controller.new.sync_devclouds
 else
