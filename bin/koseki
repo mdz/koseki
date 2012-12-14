@@ -243,6 +243,8 @@ usage AS (
 ),
 reserved_costs_raw AS (
   select region, instance_type, logical_az, running_reserved, instance_count AS reservations_at_this_price, usage_price,
+    fixed_price,
+    duration_seconds,
     greatest(0,least(instance_count, running_reserved - coalesce(sum(instance_count) OVER previous_matching_reservations,0))) AS instances
   from usage
     inner join active_reservations using (region, logical_az, instance_type)
@@ -252,13 +254,15 @@ reserved_costs_raw AS (
 ),
 reserved_costs AS (
   select region, logical_az, instance_type, sum(instances) AS instances,
-    usage_price AS hourly_cost_per_instance
+    usage_price AS hourly_cost_per_instance,
+    fixed_price / (duration_seconds/2628000) AS monthly_ri_amort_per_instance
   from reserved_costs_raw
-  group by region, logical_az, instance_type, hourly_cost_per_instance
+  group by region, logical_az, instance_type, hourly_cost_per_instance, monthly_ri_amort_per_instance
 ),
 ondemand_costs AS (
   select region, logical_az, instance_type, sum(running_ondemand) AS instances,
-    instance_ondemand_prices.price AS hourly_cost_per_instance
+    instance_ondemand_prices.price AS hourly_cost_per_instance,
+    0 AS monthly_cost_per_instance
   from usage
     left join instance_ondemand_prices USING (instance_type, region)
   where running_ondemand > 0
@@ -270,7 +274,8 @@ merged_costs AS (
   select *, 'ondemand' as pricing from ondemand_costs
 )
 SELECT * from merged_costs
-;")
+WHERE instances > 0;
+")
 
   end
 end
