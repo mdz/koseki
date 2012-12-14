@@ -219,7 +219,7 @@ class Controller
 
     @db.create_view(:active_reservations, "select region, logical_az, instance_type, sum(instance_count) as instance_count, fixed_price, usage_price, duration_seconds
 from reservations
-where now() < start + (duration_seconds*'1 second'::interval)
+where now() < end_time
 group by region, logical_az, instance_type, fixed_price, usage_price, duration_seconds;")
 
   @db.create_view(:instance_costs, "
