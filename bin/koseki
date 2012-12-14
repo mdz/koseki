@@ -147,6 +147,7 @@ class Controller
     @db.create_table :reservations do
       String :id, :unique => true, :null => false
       foreign_key :cloud_id, :clouds
+      String :region, :null => false
       String :logical_az, :null => false
       foreign_key :az_id, :availability_zones
       String :instance_type, :null => false
@@ -215,10 +216,10 @@ class Controller
       Integer :s3_snaps_per_gb
     end
 
-    @db.create_view(:active_reservations, "select logical_az, instance_type, sum(instance_count) as instance_count, fixed_price, usage_price, duration_seconds
+    @db.create_view(:active_reservations, "select region, logical_az, instance_type, sum(instance_count) as instance_count, fixed_price, usage_price, duration_seconds
 from reservations
 where now() < start + (duration_seconds*'1 second'::interval)
-group by logical_az, instance_type, fixed_price, usage_price, duration_seconds;")
+group by region, logical_az, instance_type, fixed_price, usage_price, duration_seconds;")
 
   @db.create_view(:instance_costs, "
 WITH
@@ -244,9 +245,9 @@ reserved_costs_raw AS (
   select region, instance_type, logical_az, running_reserved, instance_count AS reservations_at_this_price, usage_price,
     greatest(0,least(instance_count, running_reserved - coalesce(sum(instance_count) OVER previous_matching_reservations,0))) AS instances
   from usage
-    inner join active_reservations using (logical_az, instance_type)
+    inner join active_reservations using (region, logical_az, instance_type)
   where running_reserved > 0
-  window previous_matching_reservations AS (PARTITION BY logical_az, instance_type ORDER BY usage_price ASC ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING)
+  window previous_matching_reservations AS (PARTITION BY region, logical_az, instance_type ORDER BY usage_price ASC ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING)
 
 ),
 reserved_costs AS (
