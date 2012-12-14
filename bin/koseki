@@ -117,6 +117,10 @@ class Controller
     end
   end
 
+  def migratedb
+    system 'sequel', '-m', 'migrations', ENV['DATABASE_URL']
+  end
+
   def initdb
     @db.create_table :clouds do
       primary_key :id
@@ -284,7 +288,7 @@ when 'get-prices'
 when 'initdb'
   Controller.new.initdb
 when 'migrate-db'
-  system 'sequel', '-m', 'migrations', ENV['DATABASE_URL']
+  Controller.new.migratedb
 when 'sync-devclouds'
   Controller.new.sync_devclouds
 else
