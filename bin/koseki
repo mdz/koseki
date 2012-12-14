@@ -141,8 +141,9 @@ class Controller
       String :instance_type, :null => false
       Integer :instance_count, :null => false
       String :offering_type, :null => false
-      DateTime :start, :null => false
-      Integer :duration_seconds, :null => false
+      DateTime :start_time, :null => false
+      Integer :duration, :null => false
+      DateTime :end_time, :null => false
       Integer :fixed_price, :null => false
       Integer :usage_price, :null => false
     end

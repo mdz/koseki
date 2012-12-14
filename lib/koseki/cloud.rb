@@ -95,8 +95,9 @@ module Koseki
             r.az_id = azmap[r.logical_az]
             r.instance_type = ri["instanceType"]
             r.instance_count = ri["instanceCount"]
-            r.start = ri["start"]
-            r.duration_seconds = ri["duration"]
+            r.start_time = ri["start"]
+            r.duration = ri["duration"]
+            r.end_time = r.start + r.duration
             r.offering_type = ri["offeringType"]
             r.fixed_price = ri["fixedPrice"]
             r.usage_price = ri["usagePrice"] * 1000
