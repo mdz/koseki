@@ -9,6 +9,7 @@ require 'fog'
 require 'sequel'
 require 'amazon-pricing'
 require 'koseki/autoload'
+require 'yaml'
 
 class Controller
   def initialize
@@ -87,6 +88,24 @@ class Controller
         ebs.preferred_per_gb = region.ebs_price.preferred_per_gb * 1000 rescue nil
         ebs.preferred_per_iops = region.ebs_price.preferred_per_iops * 1000 rescue nil
         ebs.s3_snaps_per_gb = region.ebs_price.s3_snaps_per_gb * 1000
+      end
+    end
+  end
+
+  def sync_devclouds
+    yaml = YAML.load(STDIN)
+    yaml.each do |cloud, params|
+      next unless params.include? :ion_readonly_access_key_id and \
+                  params.include? :ion_readonly_secret_access_key and \
+                  params.include? :name
+
+      Koseki::Cloud.find_or_create(
+        :name => params[:name]
+      ) do |cloud|
+        cloud.name = params[:name]
+        cloud.access_key_id = params[:ion_readonly_access_key_id]
+        cloud.secret_access_key = params[:ion_readonly_secret_access_key]
+        puts "Adding: #{params[:name]}"
       end
     end
   end
@@ -255,12 +274,10 @@ when 'get-prices'
   Controller.new.import_pricelist
 when 'initdb'
   Controller.new.initdb
-when 'unknown-azs'
-  for az in Controller.new.unknown_azs
-    puts az
-  end
 when 'migrate-db'
   system 'sequel', '-m', 'migrations', ENV['DATABASE_URL']
+when 'sync-devclouds'
+  Controller.new.sync_devclouds
 else
   raise "Unknown command"
 end
