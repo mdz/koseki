@@ -281,7 +281,7 @@ when 'console'
   IRB.start
 when 'poll'
   Controller.new.poll_clouds(ARGV[1..-1])
-when 'poll'
+when 'poll-forever'
   Controller.new.poll_clouds_forever(ARGV[1..-1])
 when 'get-prices'
   Controller.new.import_pricelist
