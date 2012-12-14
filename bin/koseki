@@ -31,6 +31,13 @@ class Controller
     end
   end
 
+  def poll_clouds_forever(cloud_names=nil)
+    while true
+      poll_clouds cloud_names
+      sleep 5
+    end
+  end
+
   def clouds
     Koseki::Cloud.all
   end
@@ -270,6 +277,8 @@ when 'console'
   IRB.start
 when 'poll'
   Controller.new.poll_clouds(ARGV[1..-1])
+when 'poll'
+  Controller.new.poll_clouds_forever(ARGV[1..-1])
 when 'get-prices'
   Controller.new.import_pricelist
 when 'initdb'
