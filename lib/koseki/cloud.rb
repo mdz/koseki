@@ -15,9 +15,9 @@ module Koseki
     end
 
     def refresh_programmatic_billing
-      puts "cloud=#{name} fn=refresh_programmatic_billing at=start"
-
       return unless programmatic_billing_bucket
+
+      puts "cloud=#{name} fn=refresh_programmatic_billing at=start"
 
       storage = Fog::Storage.new({:provider => 'AWS',
         :aws_access_key_id => access_key_id,
