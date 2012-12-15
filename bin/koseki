@@ -20,25 +20,49 @@ class Controller
 
   def poll_clouds(cloud_names=nil)
     puts "fn=poll_clouds at=start"
-    threads = []
-    for cloud in clouds
-      next if cloud_names and not cloud_names.empty? and not cloud_names.include? cloud.name
 
-      threads << Thread.new(cloud) do |cloud|
-        begin
-          cloud.refresh_all
-        rescue Fog::Compute::AWS::Error => err
-          puts "cloud=#{cloud.name} at=failed aws_error=#{err}"
+    clouds_to_poll = clouds.select do |cloud|
+      cloud_names == nil or cloud_names.empty? or cloud_names.include? cloud.name
+    end
+
+    threads = []
+    max_threads = 10
+
+    until clouds_to_poll.empty? and threads.empty?
+
+      until clouds_to_poll.empty? or threads.length >= max_threads
+        threads << Thread.new(clouds_to_poll.pop()) do |cloud|
+          begin
+            cloud.refresh_all
+          rescue Fog::Compute::AWS::Error => err
+            puts "fn=poll_clouds at=failed cloud=#{cloud.name} aws_error=#{err}"
+          end
+          Thread.exit
         end
       end
+
+      while threads.length >= max_threads
+        for thread in threads
+          if not thread.status
+            thread.join
+            threads.delete thread
+          end
+        end
+        puts "fn=poll_clouds at=waiting threads=#{threads.length}"
+        sleep 1
+      end
     end
-    threads.each {|t| t.join}
+
     puts "fn=poll_clouds at=finish"
   end
 
   def poll_clouds_forever(cloud_names=nil)
+    puts "fn=poll_clouds_forever at=start"
+    loops = 0
     while true
+      puts "fn=poll_clouds_forever at=next loops=#{loops}"
       poll_clouds cloud_names
+      loops += 1
       sleep 5
     end
   end
