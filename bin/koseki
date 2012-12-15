@@ -31,7 +31,7 @@ class Controller
         end
       end
     end
-    threads.each &:join
+    threads.each {|t| t.join}
     puts "fn=poll_clouds at=finish"
   end
 
