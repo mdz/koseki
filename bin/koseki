@@ -48,8 +48,12 @@ class Controller
   end
 
   def poll_clouds_forever(cloud_names=nil)
+    puts "fn=poll_clouds_forever at=start"
+    loops = 0
     while true
+      puts "fn=poll_clouds_forever at=next loops=#{loops}"
       poll_clouds cloud_names
+      loops += 1
       sleep 5
     end
   end
