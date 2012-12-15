@@ -97,7 +97,7 @@ module Koseki
             r.instance_count = ri["instanceCount"]
             r.start_time = ri["start"]
             r.duration = ri["duration"]
-            r.end_time = r.start + r.duration
+            r.end_time = r.start_time + r.duration
             r.offering_type = ri["offeringType"]
             r.fixed_price = ri["fixedPrice"] * 1000
             r.usage_price = ri["usagePrice"] * 1000
