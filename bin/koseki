@@ -18,11 +18,15 @@ class Controller
   end
 
   def poll_clouds(cloud_names=nil)
+    threads = []
     for cloud in clouds
       next if cloud_names and not cloud_names.empty? and not cloud_names.include? cloud.name
 
-      cloud.refresh_all
+      threads << Thread.new(cloud) do |cloud|
+        cloud.refresh_all
+      end
     end
+    threads.each &:join
   end
 
   def poll_clouds_forever(cloud_names=nil)
