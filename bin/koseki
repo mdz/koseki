@@ -23,7 +23,11 @@ class Controller
       next if cloud_names and not cloud_names.empty? and not cloud_names.include? cloud.name
 
       threads << Thread.new(cloud) do |cloud|
-        cloud.refresh_all
+        begin
+          cloud.refresh_all
+        rescue Fog::Compute::AWS::Error => err
+          puts "cloud=#{cloud.name} at=error aws_error=#{err}"
+        end
       end
     end
     threads.each &:join
