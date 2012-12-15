@@ -8,7 +8,17 @@ require "irb/completion"
 require 'fog'
 require 'sequel'
 require 'amazon-pricing'
-require 'koseki/autoload'
+
+require "koseki/cloud"
+require "koseki/reservation"
+require "koseki/availability_zone"
+require "koseki/availability_zone_mapping"
+require "koseki/instance"
+require "koseki/volume"
+require "koseki/instance_reserved_price"
+require "koseki/instance_ondemand_price"
+require "koseki/ebs_price"
+
 require 'yaml'
 
 class Controller
