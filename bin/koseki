@@ -15,6 +15,7 @@ class Controller
   def initialize
     @db = Sequel.connect(ENV['DATABASE_URL'])
     @db.extension :pg_hstore
+    STDOUT.sync = true
   end
 
   def poll_clouds(cloud_names=nil)
