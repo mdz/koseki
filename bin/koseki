@@ -217,10 +217,10 @@ class Controller
       Integer :s3_snaps_per_gb
     end
 
-    @db.create_view(:active_reservations, "select region, logical_az, instance_type, sum(instance_count) as instance_count, fixed_price, usage_price, duration_seconds
+    @db.create_view(:active_reservations, "select region, logical_az, instance_type, sum(instance_count) as instance_count, fixed_price, usage_price, duration
 from reservations
 where now() < end_time
-group by region, logical_az, instance_type, fixed_price, usage_price, duration_seconds;")
+group by region, logical_az, instance_type, fixed_price, usage_price, duration;")
 
   @db.create_view(:instance_costs, "
 WITH
@@ -245,7 +245,7 @@ usage AS (
 reserved_costs_raw AS (
   select region, instance_type, logical_az, running_reserved, instance_count AS reservations_at_this_price, usage_price,
     fixed_price,
-    duration_seconds,
+    duration,
     greatest(0,least(instance_count, running_reserved - coalesce(sum(instance_count) OVER previous_matching_reservations,0))) AS instances
   from usage
     inner join active_reservations using (region, logical_az, instance_type)
@@ -256,7 +256,7 @@ reserved_costs_raw AS (
 reserved_costs AS (
   select region, logical_az, instance_type, sum(instances) AS instances,
     usage_price AS hourly_cost_per_instance,
-    fixed_price / (duration_seconds/2628000) AS monthly_ri_amort_per_instance
+    fixed_price / (duration/2628000) AS monthly_ri_amort_per_instance
   from reserved_costs_raw
   group by region, logical_az, instance_type, hourly_cost_per_instance, monthly_ri_amort_per_instance
 ),
