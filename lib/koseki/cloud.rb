@@ -90,12 +90,12 @@ module Koseki
       end
 
       def refresh_all
-        puts "cloud=#{name} region=#{region.name} at=start"
+        puts "cloud=#{name} region=#{name} at=start"
         refresh_availability_zones
         refresh_reserved_instances
         refresh_instances
         refresh_volumes
-        puts "cloud=#{name} region=#{region.name} at=finish"
+        puts "cloud=#{name} region=#{name} at=finish"
       end
 
       def refresh_availability_zones
