@@ -27,7 +27,7 @@ class Controller
         begin
           cloud.refresh_all
         rescue Fog::Compute::AWS::Error => err
-          puts "cloud=#{cloud.name} at=error aws_error=#{err}"
+          puts "cloud=#{cloud.name} at=failed aws_error=#{err}"
         end
       end
     end
