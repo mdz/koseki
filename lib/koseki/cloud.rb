@@ -1,8 +1,70 @@
 require 'fog'
 require 'koseki/autoload'
+require 'csv'
 
 module Koseki
   class Cloud < Sequel::Model
+
+    def refresh_all
+      puts "cloud=#{name} at=start"
+      refresh_programmatic_billing
+      for region in regions
+        region.refresh_all
+      end
+      puts "cloud=#{name} at=finish"
+    end
+
+    def refresh_programmatic_billing
+      puts "cloud=#{name} fn=refresh_programmatic_billing at=start"
+
+      return unless programmatic_billing_bucket
+
+      storage = Fog::Storage.new({:provider => 'AWS',
+        :aws_access_key_id => access_key_id,
+        :aws_secret_access_key => secret_access_key})
+
+      bucket = storage.directories.get(programmatic_billing_bucket)
+
+      hooks = {
+        "#{account_number}-aws-billing-csv-#{Time.now.strftime("%Y-%m")}.csv" => method(:import_bill),
+        "#{account_number}-aws-cost-allocation-#{Time.now.strftime("%Y-%m")}.csv" => nil,
+        "#{account_number}-aws-billing-detailed-line-items-#{Time.now.strftime("%Y-%m")}.csv.zip" => nil
+      }
+
+      for object in bucket.files
+        if hooks[object.key] != nil
+          hooks[object.key].call object.body
+        end
+      end
+
+      puts "cloud=#{name} fn=refresh_programmatic_billing at=finish"
+    end
+
+    def import_bill(csv)
+      accounts = Koseki::Cloud.all.reduce({}) {|h,c| h[c.account_number] = c; h}
+      unknown_accounts = {}
+
+      field_names = []
+      rows = 0
+      CSV.parse(csv) do |row|
+        rows += 1
+        if field_names.empty? # first row is headings
+          field_names = row
+          next
+        end
+
+        fields = Hash[field_names.zip(row)]
+        account_number = fields['LinkedAccountId']
+        account_name = fields['LinkedAccountName']
+
+        if account_number and not accounts.has_key? account_number
+          puts "cloud=#{name} fn=import_bill notice=unknown_account account_name=#{account_name} account_number=#{account_number}"
+          accounts[account_number] = nil
+          next
+        end
+      end
+      puts "cloud=#{name} fn=import_bill at=finish rows=#{rows}"
+    end
 
     class Region
       attr_reader :name
@@ -28,10 +90,12 @@ module Koseki
       end
 
       def refresh_all
+        puts "cloud=#{name} region=#{region.name} at=start"
         refresh_availability_zones
         refresh_reserved_instances
         refresh_instances
         refresh_volumes
+        puts "cloud=#{name} region=#{region.name} at=finish"
       end
 
       def refresh_availability_zones
