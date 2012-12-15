@@ -18,6 +18,7 @@ class Controller
   end
 
   def poll_clouds(cloud_names=nil)
+    puts "fn=poll_clouds at=start"
     threads = []
     for cloud in clouds
       next if cloud_names and not cloud_names.empty? and not cloud_names.include? cloud.name
@@ -31,6 +32,7 @@ class Controller
       end
     end
     threads.each &:join
+    puts "fn=poll_clouds at=finish"
   end
 
   def poll_clouds_forever(cloud_names=nil)
