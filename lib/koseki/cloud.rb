@@ -26,28 +26,40 @@ module Koseki
       bucket = storage.directories.get(programmatic_billing_bucket)
 
       hooks = {
-        "#{account_number}-aws-billing-csv-#{Time.now.strftime("%Y-%m")}.csv" => method(:import_bill),
-        "#{account_number}-aws-cost-allocation-#{Time.now.strftime("%Y-%m")}.csv" => nil,
-        "#{account_number}-aws-billing-detailed-line-items-#{Time.now.strftime("%Y-%m")}.csv.zip" => nil
+        /#{account_number}-aws-billing-csv-\d\d\d\d-\d\d.csv/ => method(:import_bill),
+        /#{account_number}-aws-cost-allocation-\d\d\d\d-\d\d.csv/ => nil,
+        /#{account_number}-aws-billing-detailed-line-items-\d\d\d\d-\d\d.csv.zip/ => nil
       }
 
       for object in bucket.files
-        if hooks[object.key] != nil
-          hooks[object.key].call object.body
+        hooks.each do |pattern, method|
+          if method and pattern.match(object.key)
+            method.call object
+          end
         end
       end
 
       puts "cloud=#{name} fn=refresh_programmatic_billing at=finish"
     end
 
-    def import_bill(csv)
+    def import_bill(object)
+      puts "cloud=#{name} fn=import_bill at=start object=#{object.key}"
+      already_exists = true
+      bill = AWSBill.find_or_create(:cloud_id => id, :name => object.key) do |bill|
+        bill.cloud_id = id
+        bill.name = object.key
+        bill.last_modified = object.last_modified
+        already_exists = false
+      end
+      return if already_exists
+
       accounts = Koseki::Cloud.all.reduce({}) {|h,c| h[c.account_number] = c; h}
       unknown_accounts = {}
 
       field_names = []
-      rows = 0
-      CSV.parse(csv) do |row|
-        rows += 1
+      line_number = 0
+      CSV.parse(object.body) do |row|
+        line_number += 1
         if field_names.empty? # first row is headings
           field_names = row
           next
@@ -60,10 +72,31 @@ module Koseki
         if account_number and not accounts.has_key? account_number
           puts "cloud=#{name} fn=import_bill notice=unknown_account account_name=#{account_name} account_number=#{account_number}"
           accounts[account_number] = nil
-          next
+        end
+        
+        line = Koseki::AWSBillLineItem.create do |line|
+          line.aws_bill_id = bill.id
+          line.last_modified = bill.last_modified
+          cloud = accounts[account_number]
+          line.cloud_id = cloud ? cloud.id : nil
+          line.line_number = line_number
+
+          fields.each do |key, value|
+            column_name = key.gsub(/::/, '/').
+              gsub(/([A-Z]+)([A-Z][a-z])/,'\1_\2').
+              gsub(/([a-z\d])([A-Z])/,'\1_\2').
+              tr("-", "_").
+              downcase
+            line.send((column_name+'=').to_sym, value)
+          end
         end
       end
-      puts "cloud=#{name} fn=import_bill at=finish rows=#{rows}"
+ 
+      obsolete_lines = Koseki::AWSBillLineItem.where(:aws_bill_id => bill.id).where{last_modified < bill.last_modified}
+      
+      obsolete_lines.delete
+        
+      puts "cloud=#{name} fn=import_bill at=finish lines=#{line_number} obsoleted=#{obsolete_lines.count}"
     end
 
     class Region

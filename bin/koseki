@@ -27,6 +27,8 @@ class Controller
     require "koseki/instance_reserved_price"
     require "koseki/instance_ondemand_price"
     require "koseki/ebs_price"
+    require "koseki/aws_bill"
+    require "koseki/aws_bill_line_item"
   end
 
   def poll_clouds(cloud_names=nil)
@@ -236,6 +238,52 @@ class Controller
       Integer :preferred_per_million_io
       Integer :preferred_per_iops
       Integer :s3_snaps_per_gb
+    end
+
+    @db.create_table :aws_bills do
+      primary_key :id
+      foreign_key :cloud_id, :clouds
+      String :name, :null => false
+      DateTime :last_modified, :null => false
+      unique ([:cloud_id, :name])
+    end
+
+    @db.create_table :aws_bill_line_items do
+      foreign_key :aws_bill_id, :aws_bills
+      foreign_key :cloud_id, :clouds
+      DateTime :last_modified, :null => false
+      Integer :line_number, :null => false
+
+      # InvoiceID,PayerAccountId,LinkedAccountId,RecordType,RecordID,BillingPeriodStartDate,BillingPeriodEndDate,InvoiceDate,PayerAccountName,LinkedAccountName,TaxationAddress,PayerPONumber,ProductCode,ProductName,SellerOfRecord,UsageType,Operation,RateId,ItemDescription,UsageStartDate,UsageEndDate,UsageQuantity,BlendedRate,CurrencyCode,CostBeforeTax,Credits,TaxAmount,TaxType,TotalCost
+      String :invoice_id
+      String :payer_account_id
+      String :linked_account_id
+      String :record_type
+      String :record_id
+      DateTime :billing_period_start_date
+      DateTime :billing_period_end_date
+      DateTime :invoice_date
+      String :payer_account_name
+      String :linked_account_name
+      String :taxation_address
+      String :payer_po_number
+      String :product_code
+      String :product_name
+      String :seller_of_record
+      String :usage_type
+      String :operation
+      String :rate_id
+      String :item_description
+      DateTime :usage_start_date
+      DateTime :usage_end_date
+      Float :usage_quantity
+      Float :blended_rate
+      String :currency_code
+      Float :cost_before_tax
+      Float :credits
+      Float :tax_amount
+      String :tax_type
+      Float :total_cost
     end
 
     @db.create_view(:active_reservations, "select region, logical_az, instance_type, sum(instance_count) as instance_count, fixed_price, usage_price, duration
