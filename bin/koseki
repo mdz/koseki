@@ -46,7 +46,7 @@ class Controller
     puts "fn=poll_cloud cloud=#{cloud ? cloud.name : nil} at=start"
 
     if cloud
-      Locksmith::Pg.lock(target_cloud.id)
+      Locksmith::Pg.lock(cloud.id)
     else
       while not cloud
         # find the least recently updated cloud
