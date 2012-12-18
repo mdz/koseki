@@ -43,21 +43,24 @@ class Controller
   def poll_cloud(cloud=nil)
     puts "fn=poll_cloud cloud=#{cloud ? cloud.name : nil} at=start"
 
-    if cloud and cloud.locked
-      raise "Cloud '#{cloud.name}' is locked (update already in progress?)"
-    end
-
-    while not (cloud and cloud.locked)
+    begin
       @db.transaction(:isolation => :serializable) do
-        cloud = Koseki::Cloud.where(:locked => nil).order(:updated_at).first
         if cloud
-          cloud.update(:locked => Time.now)
+          # try the cloud we were passed
+          cloud = Koseki::Cloud[cloud.id]
+        else
+          # choose the unlocked one which is most stale
+          cloud = Koseki::Cloud.where(:locked => nil).order(:updated_at).first
         end
+
+        cloud.update(:locked => Time.now) unless cloud.nil?
       end
+
       break if cloud
+
       puts "fn=poll_cloud at=waiting message=All clouds busy, sleeping"
       sleep 5
-    end
+    end while true
 
     begin
       cloud.refresh_all
