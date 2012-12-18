@@ -137,13 +137,15 @@ module Koseki
         raise "Specified account number (#{account_number}) does not match ARN (#{user.arn})"
       end
 
+      # clear out any older keys for the koseki user
+      #if not user.access_keys.empty?
+      #  for key in user.access_keys
+      #    key.destroy
+      #  end
+      #end
+
       # We don't seem to get the secret key for existing access keys, so always
       # create a new one
-      if not user.access_keys.empty?
-        for key in user.access_keys
-          key.destroy
-        end
-      end
       key = user.access_keys.create
 
       policy_document = {
