@@ -47,7 +47,7 @@ class Controller
       @db.transaction(:isolation => :serializable) do
         if cloud
           # try the cloud we were passed
-          cloud = Koseki::Cloud.where(:locked=> nil, id => cloud.id).first
+          cloud = Koseki::Cloud.where(:locked=> nil, :id => cloud.id).first
         else
           # choose the unlocked one which is most stale
           cloud = Koseki::Cloud.where(:locked => nil).order(:updated_at).first
