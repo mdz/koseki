@@ -57,10 +57,8 @@ class Controller
             # success
             cloud = c
             break
-          else
-            puts "fn=poll_cloud at=lock_failed cloud=#{c.name}"
-            # try the next one
           end
+          # otherwise try the next one
         end
         break if cloud
         # all clouds are locked
