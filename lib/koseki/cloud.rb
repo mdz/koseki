@@ -6,13 +6,13 @@ module Koseki
   class Cloud < Sequel::Model
 
     def refresh_all
-      puts "cloud=#{name} at=start"
+      puts "cloud=#{name} fn=refresh_all at=start"
       refresh_programmatic_billing
       for region in regions
         region.refresh_all
       end
       update(:updated_at => Time.now)
-      puts "cloud=#{name} at=finish"
+      puts "cloud=#{name} fn=refresh_all at=finish"
     end
 
     def refresh_programmatic_billing
