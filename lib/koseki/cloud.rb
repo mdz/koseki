@@ -176,7 +176,7 @@ module Koseki
     end
 
     def self.iam_user_arn_matches_account_number(arn, account_number)
-      /^arn:aws:iam:[^:]*:#{account_number}:/.match(arn)
+      account_number == arn.split(':')[4]
     end
 
     def try_lock
