@@ -41,7 +41,7 @@ class Controller
   end
 
   def poll_cloud(target_cloud=nil)
-    puts "fn=poll_cloud cloud=#{target_cloud ? target_cloud.name : nil} at=start"
+    puts "fn=poll_cloud target_cloud=#{target_cloud ? target_cloud.name : nil} at=start"
 
     cloud = nil
     begin
