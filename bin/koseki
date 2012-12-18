@@ -8,7 +8,6 @@ require "irb/completion"
 require 'fog'
 require 'sequel'
 require 'amazon-pricing'
-require 'locksmith/pg'
 
 require 'yaml'
 
@@ -46,21 +45,18 @@ class Controller
     puts "fn=poll_cloud cloud=#{cloud ? cloud.name : nil} at=start"
 
     if cloud
-      Locksmith::Pg.lock(cloud.id)
+      cloud.lock
     else
       while not cloud
         # find the least recently updated cloud
         Koseki::Cloud.order(Sequel.asc(:updated_at, :nulls=>:first)).each do |c|
-          # try to lock it
-          if Locksmith::Pg.write_lock(c.id)
-            # success
+          if c.try_lock
             cloud = c
             break
           end
-          # otherwise try the next one
         end
         break if cloud
-        # all clouds are locked
+        # all clouds are busy
         puts "fn=poll_cloud at=idle"
         sleep 1+rand(4)
       end
@@ -69,7 +65,7 @@ class Controller
     begin
       cloud.refresh_all
     ensure
-      Locksmith::Pg.release_lock(cloud.id)
+      cloud.unlock
     end
 
     puts "fn=poll_cloud cloud=#{cloud.name} at=finish"

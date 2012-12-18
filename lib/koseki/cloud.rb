@@ -1,6 +1,7 @@
 require 'fog'
 require 'koseki/autoload'
 require 'csv'
+require 'locksmith/pg'
 
 module Koseki
   class Cloud < Sequel::Model
@@ -109,6 +110,21 @@ module Koseki
       puts "cloud=#{name} fn=import_bill at=finish lines=#{line_number} old_records=#{old_record_count}"
     end
 
+    def try_lock
+      Locksmith::Pg.write_lock(locksmith_id)
+    end
+
+    def lock
+      Locksmith::Pg.lock(locksmith_id)
+    end
+
+    def unlock
+      Locksmith::Pg.release_lock(locksmith_id)
+    end
+
+    def locksmith_id
+      id.to_s
+    end
     class Region
       attr_reader :name
 
