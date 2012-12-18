@@ -43,7 +43,7 @@ class Controller
   def poll_cloud(cloud=nil)
     puts "fn=poll_cloud cloud=#{cloud ? cloud.name : nil} at=start"
 
-    @db.transaction do
+    @db.transaction(:isolation => :serializable) do
       if cloud == nil
         # choose the least recently updated one to do next
         while not cloud
@@ -63,7 +63,9 @@ class Controller
     begin
       cloud.refresh_all
     ensure
-      @db.transaction { cloud.update(:locked => nil) }
+      @db.transaction(:isolation => :serializable) do
+        cloud.update(:locked => nil)
+      end
     end
 
     puts "fn=poll_cloud cloud=#{cloud.name} at=finish"
