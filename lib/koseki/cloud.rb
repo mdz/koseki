@@ -7,6 +7,8 @@ module Koseki
 
     def refresh_all
       puts "cloud=#{name} at=start"
+      update(:updated_at => Time.now)
+
       refresh_programmatic_billing
       for region in regions
         region.refresh_all
