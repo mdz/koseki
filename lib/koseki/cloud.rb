@@ -44,20 +44,24 @@ module Koseki
 
     def import_bill(object)
       puts "cloud=#{name} fn=import_bill at=start object=#{object.key}"
-      already_exists = true
+      already_existed = true
       bill = AWSBill.find_or_create(:cloud_id => id, :name => object.key) do |bill|
         bill.cloud_id = id
         bill.name = object.key
         bill.last_modified = object.last_modified
-        already_exists = false
+        already_existed = false
       end
 
-      fresh = (already_exists and bill.last_modified == object.last_modified)
+      fresh = (already_existed and bill.last_modified == object.last_modified)
 
       if fresh
         puts "cloud=#{name} fn=import_bill at=fresh last_modified_db=#{bill.last_modified} last_modified_object=#{object.last_modified} fresh=#{fresh}"
         return
       end
+
+      old_records = Koseki::AWSBillLineItem.where(:aws_bill_id => bill.id)
+      old_record_count = old_records.count
+      old_records.delete
 
       accounts = Koseki::Cloud.all.reduce({}) {|h,c| h[c.account_number] = c; h}
       unknown_accounts = {}
@@ -82,7 +86,7 @@ module Koseki
         
         line = Koseki::AWSBillLineItem.create do |line|
           line.aws_bill_id = bill.id
-          line.last_modified = bill.last_modified
+          line.last_modified = object.last_modified
           cloud = accounts[account_number]
           line.cloud_id = cloud ? cloud.id : nil
           line.line_number = line_number
@@ -99,12 +103,8 @@ module Koseki
       end
  
       bill.update(:last_modified => object.last_modified)
-
-      obsolete_lines = Koseki::AWSBillLineItem.where(:aws_bill_id => bill.id).where{last_modified < bill.last_modified}
-      
-      obsolete_lines.delete
         
-      puts "cloud=#{name} fn=import_bill at=finish lines=#{line_number} obsoleted=#{obsolete_lines.count}"
+      puts "cloud=#{name} fn=import_bill at=finish lines=#{line_number} old_records=#{old_records_count}"
     end
 
     class Region
