@@ -66,7 +66,7 @@ class Controller
       sleep 5
     rescue Sequel::DatabaseError => err
       # transaction failed to commit (lock contention?)
-      puts "fn=poll_cloud at=error error=#{err}"
+      puts "fn=poll_cloud at=retry_lock error=#{err}"
       sleep 5
     end while true
 
@@ -80,7 +80,7 @@ class Controller
         break
       rescue Sequel::DatabaseError => err
         # transaction failed to commit (lock contention?)
-        puts "fn=poll_cloud at=error error=#{err}"
+        puts "fn=poll_cloud at=retry_unlock error=#{err}"
         sleep 5
       end while true
     end
