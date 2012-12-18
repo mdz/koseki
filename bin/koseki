@@ -43,11 +43,14 @@ class Controller
   def poll_cloud(cloud=nil)
     puts "fn=poll_cloud cloud=#{cloud ? cloud.name : nil} at=start"
 
-    timeout = 3600
     @db.transaction do
       if cloud == nil
         # choose the least recently updated one to do next
         cloud = Koseki::Cloud.where(:locked => nil).order(:updated_at).first
+        if not cloud
+          puts "fn=poll_cloud at=waiting message=All clouds locked, sleeping"
+          sleep 5
+        end
       else
         if cloud.locked
           raise "Cloud '#{cloud.name}' is locked (update already in progress?)"
