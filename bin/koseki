@@ -52,9 +52,9 @@ class Controller
         cloud = Koseki::Cloud.where(:locked => nil).order(:updated_at).first
         if cloud
           cloud.update(:locked => Time.now)
-          break
         end
       end
+      break if cloud
       puts "fn=poll_cloud at=waiting message=All clouds busy, sleeping"
       sleep 5
     end
