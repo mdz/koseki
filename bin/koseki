@@ -43,21 +43,20 @@ class Controller
   def poll_cloud(cloud=nil)
     puts "fn=poll_cloud cloud=#{cloud ? cloud.name : nil} at=start"
 
-    @db.transaction(:isolation => :serializable) do
-      if cloud == nil
-        # choose the least recently updated one to do next
-        while not cloud
-          cloud = Koseki::Cloud.where(:locked => nil).order(:updated_at).first
-          puts "fn=poll_cloud at=waiting message=All clouds busy, sleeping"
-          sleep 5
-        end
-      else
-        if cloud.locked
-          raise "Cloud '#{cloud.name}' is locked (update already in progress?)"
+    if cloud and cloud.locked
+      raise "Cloud '#{cloud.name}' is locked (update already in progress?)"
+    end
+
+    while not (cloud and cloud.locked)
+      @db.transaction(:isolation => :serializable) do
+        cloud = Koseki::Cloud.where(:locked => nil).order(:updated_at).first
+        if cloud
+          cloud.update(:locked => Time.now)
+          break
         end
       end
-
-      cloud.update(:locked => Time.now)
+      puts "fn=poll_cloud at=waiting message=All clouds busy, sleeping"
+      sleep 5
     end
 
     begin
