@@ -126,7 +126,7 @@ module Koseki
     def self.create_credentials(account_number, account_holder_access_key_id, account_holder_secret_access_key)
       # Create limit access IAM credentials using the account holder's creds
 
-      puts "fn=create_credentials account_holder_access_key_id=#{account_holder_access_key_id} account_holder_secret_access_key=#{account_holder_secret_access_key}"
+      puts "fn=create_credentials at=start account_holder_access_key_id=#{account_holder_access_key_id} account_number=#{account_number}"
 
       iam = Fog::AWS::IAM.new({
           :aws_access_key_id => account_holder_access_key_id,
