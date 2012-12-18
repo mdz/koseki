@@ -40,16 +40,19 @@ class Controller
     puts "fn=poll_all_clouds at=finish"
   end
 
-  def poll_cloud(cloud=nil)
-    puts "fn=poll_cloud cloud=#{cloud ? cloud.name : nil} at=start"
+  def poll_cloud(target_cloud=nil)
+    puts "fn=poll_cloud cloud=#{target_cloud ? target_cloud.name : nil} at=start"
 
     begin
       @db.transaction(:isolation => :serializable) do
-        if cloud
+        if target_cloud
           # try the cloud we were passed
-          cloud = Koseki::Cloud.where(:locked=> nil, :id => cloud.id).first
+          cloud = Koseki::Cloud[:id => target_cloud.id]
+          if cloud.locked
+            raise "Cloud #{cloud.name} is busy"
+          end
         else
-          # choose the unlocked one which is most stale
+          # choose the unlocked one which has been least recently updated
           cloud = Koseki::Cloud.where(:locked => nil).order(:updated_at).first
         end
 
