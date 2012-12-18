@@ -65,6 +65,7 @@ class Controller
       puts "fn=poll_cloud at=waiting message=All clouds busy, sleeping"
       sleep 5
     rescue Sequel::DatabaseError => err
+      # transaction failed to commit (lock contention?)
       puts "fn=poll_cloud at=error error=#{err}"
       sleep 5
     end while true
@@ -72,9 +73,16 @@ class Controller
     begin
       cloud.refresh_all
     ensure
-      @db.transaction(:isolation => :serializable) do
-        cloud.update(:locked => nil)
-      end
+      begin
+        @db.transaction(:isolation => :serializable) do
+          cloud.update(:locked => nil)
+        end
+        break
+      rescue Sequel::DatabaseError => err
+        # transaction failed to commit (lock contention?)
+        puts "fn=poll_cloud at=error error=#{err}"
+        sleep 5
+      end while true
     end
 
     puts "fn=poll_cloud cloud=#{cloud.name} at=finish"
