@@ -27,7 +27,12 @@ module Koseki
         return JSON.dump({"error" => "A cloud already exists with the specified name or account number"})
       end
 
-      Koseki::Cloud.register(params)
+      begin
+        Koseki::Cloud.register(params)
+      rescue RuntimeError => err
+        status 500
+        return JSON.dump({"error" => err})
+      end
 
       status 200
       JSON.dump({"status" => "ok"})
