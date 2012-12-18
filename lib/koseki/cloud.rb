@@ -104,7 +104,7 @@ module Koseki
  
       bill.update(:last_modified => object.last_modified)
         
-      puts "cloud=#{name} fn=import_bill at=finish lines=#{line_number} old_records=#{old_records_count}"
+      puts "cloud=#{name} fn=import_bill at=finish lines=#{line_number} old_records=#{old_record_count}"
     end
 
     class Region
