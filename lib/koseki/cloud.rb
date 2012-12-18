@@ -98,6 +98,8 @@ module Koseki
         end
       end
  
+      bill.update(:last_modified => object.last_modified)
+
       obsolete_lines = Koseki::AWSBillLineItem.where(:aws_bill_id => bill.id).where{last_modified < bill.last_modified}
       
       obsolete_lines.delete
