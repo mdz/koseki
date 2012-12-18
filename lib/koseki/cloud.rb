@@ -51,7 +51,13 @@ module Koseki
         bill.last_modified = object.last_modified
         already_exists = false
       end
-      return if already_exists
+
+      fresh = already_exists and bill.last_modified == object.last_modified
+
+      if fresh:
+        puts "cloud=#{name} fn=import_bill at=fresh last_modified_db=#{bill.last_modified} last_modified_object=#{object.last_modified} fresh=#{fresh}"
+        return
+      end
 
       accounts = Koseki::Cloud.all.reduce({}) {|h,c| h[c.account_number] = c; h}
       unknown_accounts = {}
