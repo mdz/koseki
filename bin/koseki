@@ -72,7 +72,7 @@ class Controller
     begin
       cloud.refresh_all
     ensure
-      Locksmith::Pg.unlock(cloud.id)
+      Locksmith::Pg.release_lock(cloud.id)
     end
 
     puts "fn=poll_cloud cloud=#{cloud.name} at=finish"
