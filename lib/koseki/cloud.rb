@@ -52,7 +52,7 @@ module Koseki
         already_exists = false
       end
 
-      fresh = already_exists and bill.last_modified == object.last_modified
+      fresh = (already_exists and bill.last_modified == object.last_modified)
 
       if fresh
         puts "cloud=#{name} fn=import_bill at=fresh last_modified_db=#{bill.last_modified} last_modified_object=#{object.last_modified} fresh=#{fresh}"
