@@ -43,6 +43,7 @@ class Controller
   def poll_cloud(target_cloud=nil)
     puts "fn=poll_cloud cloud=#{target_cloud ? target_cloud.name : nil} at=start"
 
+    cloud = nil
     begin
       @db.transaction(:isolation => :serializable) do
         if target_cloud
