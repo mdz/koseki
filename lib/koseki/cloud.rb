@@ -11,6 +11,7 @@ module Koseki
       for region in regions
         region.refresh_all
       end
+      update(:updated_at => Time.now)
       puts "cloud=#{name} at=finish"
     end
 

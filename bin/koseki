@@ -32,29 +32,46 @@ class Controller
   end
 
   def poll_clouds(cloud_names=nil)
-    puts "fn=poll_clouds at=start"
-    threads = []
-    for cloud in clouds
-      next if cloud_names and not cloud_names.empty? and not cloud_names.include? cloud.name
-
-      threads << Thread.new(cloud) do |cloud|
-        begin
-          cloud.refresh_all
-        rescue Fog::Compute::AWS::Error => err
-          puts "cloud=#{cloud.name} at=failed aws_error=#{err}"
-        end
-      end
+    puts "fn=poll_all_clouds at=start"
+    for cloud in clouds.sort_by {|cloud| cloud.updated_at || Time.at(0) }
+      next unless cloud_names == nil or cloud_names.empty? or cloud_names.has_key? cloud.name
+      poll_cloud cloud
     end
-    threads.each {|t| t.join}
-    puts "fn=poll_clouds at=finish"
+    puts "fn=poll_all_clouds at=finish"
   end
 
-  def poll_clouds_forever(cloud_names=nil)
-    puts "fn=poll_clouds_forever at=start"
+  def poll_cloud(cloud=nil)
+    puts "fn=poll_cloud cloud=#{cloud ? cloud.name : nil} at=start"
+
+    timeout = 3600
+    @db.transaction do
+      if cloud == nil
+        # choose the least recently updated one to do next
+        cloud = Koseki::Cloud.where(:locked => nil).order(:updated_at).first
+      else
+        if cloud.locked
+          raise "Cloud '#{cloud.name}' is locked (update already in progress?)"
+        end
+      end
+
+      cloud.update(:locked => Time.now)
+    end
+
+    begin
+      cloud.refresh_all
+    ensure
+      @db.transaction { cloud.update(:locked => nil) }
+    end
+
+    puts "fn=poll_cloud cloud=#{cloud.name} at=finish"
+  end
+
+  def poll_forever
+    puts "fn=poll_forever at=start"
     loops = 0
     while true
-      puts "fn=poll_clouds_forever at=next loops=#{loops}"
-      poll_clouds cloud_names
+      puts "fn=poll_forever at=next loops=#{loops}"
+      poll_cloud
       loops += 1
       sleep 5
     end
@@ -151,6 +168,8 @@ class Controller
       String :access_key_id, :null => false
       String :secret_access_key, :null => false
       String :programmatic_billing_bucket
+      DateTime :updated_at
+      DateTime :locked
     end
 
     @db.create_table :availability_zones do
@@ -358,7 +377,7 @@ when 'console'
 when 'poll'
   Controller.new.poll_clouds(ARGV[1..-1])
 when 'poll-forever'
-  Controller.new.poll_clouds_forever(ARGV[1..-1])
+  Controller.new.poll_forever
 when 'get-prices'
   Controller.new.import_pricelist
 when 'initdb'
