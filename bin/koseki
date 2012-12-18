@@ -60,7 +60,7 @@ class Controller
         cloud.update(:locked => Time.now) unless cloud.nil?
       end
 
-      break if cloud
+      break if cloud # lock obtained
 
       puts "fn=poll_cloud at=waiting message=All clouds busy, sleeping"
       sleep 5
@@ -73,6 +73,7 @@ class Controller
     begin
       cloud.refresh_all
     ensure
+      # release lock
       begin
         @db.transaction(:isolation => :serializable) do
           cloud.update(:locked => nil)
