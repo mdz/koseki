@@ -5,6 +5,7 @@ module Koseki
   class Web < Sinatra::Base
     helpers do
       raise "No API_KEY specified" unless ENV['API_KEY']
+      set :port, ENV['PORT']
 
       def protected_by_api_key!
         unless http_basic_authorized?
