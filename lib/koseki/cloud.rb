@@ -110,6 +110,73 @@ module Koseki
       puts "cloud=#{name} fn=import_bill at=finish lines=#{line_number} old_records=#{old_record_count}"
     end
 
+    def self.register(params)
+      credentials = create_credentials(params['account_number'],
+                                       params['access_key_id'],
+                                       params['secret_access_key'])
+
+      Koseki::Cloud.create do |cloud|
+        cloud.name = params['name']
+        cloud.account_number = params['account_number']
+        cloud.access_key_id = credentials[:access_key_id]
+        cloud.secret_access_key = credentials[:secret_access_key]
+      end
+    end
+
+    def self.create_credentials(account_number, account_holder_access_key_id, account_holder_secret_access_key)
+      # Create limit access IAM credentials using the account holder's creds
+
+      puts "fn=create_credentials account_holder_access_key_id=#{account_holder_access_key_id} account_holder_secret_access_key=#{account_holder_secret_access_key}"
+
+      iam = Fog::AWS::IAM.new({
+          :aws_access_key_id => account_holder_access_key_id,
+          :aws_secret_access_key => account_holder_secret_access_key})
+
+      user = iam.users.get('koseki') || iam.users.create(:id => 'koseki')
+      if not iam_user_arn_matches_account_number(user.arn, account_number)
+        raise "Specified account number (#{account_number}) does not match ARN (#{user.arn})"
+      end
+
+      # We don't seem to get the secret key for existing access keys, so always
+      # create a new one
+      if not user.access_keys.empty?
+        for key in user.access_keys
+          key.destroy
+        end
+      end
+      key = user.access_keys.create
+
+      policy_document = {
+        "Statement" => [
+          {
+            "Effect" => "Allow",
+            "Action" => ["ec2:describe*"],
+            "Resource" => "*"
+          }
+        ]
+      }
+      policy = user.policies.get('koseki-polling') ||
+               user.policies.create(:id => 'koseki-access', :document => policy_document)
+      if policy.document != policy_document
+        policy.document = policy_document
+        policy.save
+      end
+
+      access_key_id = key.id
+      secret_access_key = key.secret_access_key
+
+      ret = {
+        :access_key_id => access_key_id,
+        :secret_access_key => secret_access_key
+      }
+      puts "fn=create_credentials at=finish access_key_id=#{ret[:access_key_id]}"
+      return ret
+    end
+
+    def self.iam_user_arn_matches_account_number(arn, account_number)
+      /^arn:aws:iam:[^:]*:#{account_number}/.match(arn)
+    end
+
     def try_lock
       Locksmith::Pg.write_lock(locksmith_id)
     end

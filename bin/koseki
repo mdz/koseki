@@ -29,6 +29,7 @@ class Controller
     require "koseki/ebs_price"
     require "koseki/aws_bill"
     require "koseki/aws_bill_line_item"
+    require 'koseki/web'
   end
 
   def poll_clouds(cloud_names=nil)
@@ -161,6 +162,10 @@ class Controller
         puts "Adding: #{params[:name]}"
       end
     end
+  end
+
+  def web
+    Koseki::Web.run! 
   end
 
   def migratedb
@@ -392,6 +397,8 @@ when 'migrate-db'
   Controller.new.migratedb
 when 'sync-devclouds'
   Controller.new.sync_devclouds
+when 'web'
+  Controller.new.web
 else
   raise "Unknown command"
 end
