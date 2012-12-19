@@ -30,7 +30,7 @@ module Koseki
 
       hooks = {
         /#{account_number}-aws-billing-csv-\d\d\d\d-\d\d.csv/ => method(:import_bill),
-        /#{account_number}-aws-cost-allocation-\d\d\d\d-\d\d.csv/ => nil,
+        /#{account_number}-aws-cost-allocation-\d\d\d\d-\d\d.csv/ => method(:import_bill),
         /#{account_number}-aws-billing-detailed-line-items-\d\d\d\d-\d\d.csv.zip/ => nil
       }
 
@@ -46,7 +46,7 @@ module Koseki
     end
 
     def import_bill(object)
-      puts "cloud=#{name} fn=import_bill at=start object=#{object.key}"
+      puts "cloud=#{name} fn=import_bill object=#{object.key} at=start"
       already_existed = true
       bill = AWSBill.find_or_create(:cloud_id => id, :name => object.key) do |bill|
         bill.cloud_id = id
@@ -107,7 +107,7 @@ module Koseki
  
       bill.update(:last_modified => object.last_modified)
         
-      puts "cloud=#{name} fn=import_bill at=finish lines=#{line_number} old_records=#{old_record_count}"
+      puts "cloud=#{name} fn=import_bill at=finish object=#{object.key} lines=#{line_number} old_records=#{old_record_count}"
     end
 
     def self.register(params)
