@@ -73,7 +73,7 @@ module Koseki
       line_number = 0
       CSV.parse(object.body) do |row|
         line_number += 1
-        if field_names.empty? # first row is headings
+        if row[0] == 'InvoiceID'
           field_names = row
           next
         end
@@ -99,6 +99,7 @@ module Koseki
               gsub(/([A-Z]+)([A-Z][a-z])/,'\1_\2').
               gsub(/([a-z\d])([A-Z])/,'\1_\2').
               tr("-", "_").
+              tr(":", "_").
               downcase
             line.send((column_name+'=').to_sym, value)
           end
