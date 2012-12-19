@@ -67,7 +67,6 @@ module Koseki
       old_records.delete
 
       accounts = Koseki::Cloud.all.reduce({}) {|h,c| h[c.account_number] = c; h}
-      unknown_accounts = {}
 
       field_names = []
       line_number = 0
@@ -80,12 +79,6 @@ module Koseki
 
         fields = Hash[field_names.zip(row)]
         account_number = fields['LinkedAccountId']
-        account_name = fields['LinkedAccountName']
-
-        if account_number and not accounts.has_key? account_number
-          puts "cloud=#{name} fn=import_bill at=unknown_account object=#{object.key} account_name=#{account_name} account_number=#{account_number}"
-          accounts[account_number] = nil
-        end
         
         line = Koseki::AWSBillLineItem.create do |line|
           line.aws_bill_id = bill.id
