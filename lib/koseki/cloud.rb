@@ -111,38 +111,39 @@ module Koseki
     end
 
     def self.register(params)
-      credentials = create_credentials(params['account_number'],
-                                       params['access_key_id'],
+      credentials = create_credentials(params['access_key_id'],
                                        params['secret_access_key'])
+
+      if not Koseki::Cloud.where(Sequel.or({:name => params['name'], :account_number => credentials[:account_number]})).empty?
+        raise "Another cloud is already registered under that name or account number"
+      end
 
       Koseki::Cloud.create do |cloud|
         cloud.name = params['name']
-        cloud.account_number = params['account_number']
+        cloud.account_number = credentials[:account_number]
         cloud.access_key_id = credentials[:access_key_id]
         cloud.secret_access_key = credentials[:secret_access_key]
       end
     end
 
-    def self.create_credentials(account_number, account_holder_access_key_id, account_holder_secret_access_key)
+    def self.create_credentials(account_holder_access_key_id, account_holder_secret_access_key)
       # Create limit access IAM credentials using the account holder's creds
 
-      puts "fn=create_credentials at=start account_holder_access_key_id=#{account_holder_access_key_id} account_number=#{account_number}"
+      puts "fn=create_credentials at=start account_holder_access_key_id=#{account_holder_access_key_id}"
 
       iam = Fog::AWS::IAM.new({
           :aws_access_key_id => account_holder_access_key_id,
           :aws_secret_access_key => account_holder_secret_access_key})
 
       user = iam.users.get('koseki') || iam.users.create(:id => 'koseki')
-      if not iam_user_arn_matches_account_number(user.arn, account_number)
-        raise "Specified account number (#{account_number}) does not match ARN (#{user.arn})"
-      end
+      account_number = account_number_from_arn(user.arn)
 
       # clear out any older keys for the koseki user
-      #if not user.access_keys.empty?
-      #  for key in user.access_keys
-      #    key.destroy
-      #  end
-      #end
+      if not user.access_keys.empty?
+        for key in user.access_keys
+          key.destroy
+        end
+      end
 
       # We don't seem to get the secret key for existing access keys, so always
       # create a new one
@@ -169,14 +170,15 @@ module Koseki
 
       ret = {
         :access_key_id => access_key_id,
-        :secret_access_key => secret_access_key
+        :secret_access_key => secret_access_key,
+        :account_number => account_number
       }
-      puts "fn=create_credentials at=finish access_key_id=#{ret[:access_key_id]}"
+      puts "fn=create_credentials at=finish access_key_id=#{ret[:access_key_id]} account_number=#{ret[:account_number]}"
       return ret
     end
 
-    def self.iam_user_arn_matches_account_number(arn, account_number)
-      account_number == arn.split(':')[4]
+    def self.account_number_from_arn(arn)
+      arn.split(':')[4]
     end
 
     def try_lock
@@ -194,6 +196,7 @@ module Koseki
     def locksmith_id
       id.to_s
     end
+
     class Region
       attr_reader :name
 
