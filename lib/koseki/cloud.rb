@@ -57,8 +57,8 @@ module Koseki
 
       fresh = (already_existed and bill.last_modified == object.last_modified)
 
+      puts "cloud=#{name} fn=import_bill at=fresh object=#{object.key} last_modified_db=#{bill.last_modified} last_modified_object=#{object.last_modified} fresh=#{fresh}"
       if fresh
-        puts "cloud=#{name} fn=import_bill at=fresh last_modified_db=#{bill.last_modified} last_modified_object=#{object.last_modified} fresh=#{fresh}"
         return
       end
 
@@ -83,7 +83,7 @@ module Koseki
         account_name = fields['LinkedAccountName']
 
         if account_number and not accounts.has_key? account_number
-          puts "cloud=#{name} fn=import_bill at=unknown_account account_name=#{account_name} account_number=#{account_number}"
+          puts "cloud=#{name} fn=import_bill at=unknown_account object=#{object.key} account_name=#{account_name} account_number=#{account_number}"
           accounts[account_number] = nil
         end
         
