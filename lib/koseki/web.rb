@@ -22,14 +22,9 @@ module Koseki
 
     post "/register-cloud" do
       protected_by_api_key!
-      if not Koseki::Cloud.where(Sequel.or({:name => params['name'], :account_number => params['account_number']})).empty?
-        status 400
-        return JSON.dump({"error" => "A cloud already exists with the specified name or account number"})
-      end
-
       begin
         Koseki::Cloud.register(params)
-      rescue RuntimeError => err
+      rescue StandardError => err
         status 500
         return JSON.dump({"error" => err})
       end

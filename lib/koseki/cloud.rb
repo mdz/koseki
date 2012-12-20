@@ -115,16 +115,16 @@ module Koseki
       credentials = create_credentials(params['access_key_id'],
                                        params['secret_access_key'])
 
-      if not Koseki::Cloud.where(Sequel.or({:name => params['name'], :account_number => credentials[:account_number]})).empty?
-        raise "Another cloud is already registered under that name or account number"
-      end
-
-      Koseki::Cloud.create do |cloud|
+      cloud = Koseki::Cloud.find_or_create(:account_number => credentials[:account_number]) do |cloud|
         cloud.name = params['name']
-        cloud.account_number = credentials[:account_number]
         cloud.access_key_id = credentials[:access_key_id]
         cloud.secret_access_key = credentials[:secret_access_key]
       end
+
+      # update the credentials if it already existed
+      cloud.access_key_id = credentials[:access_key_id]
+      cloud.secret_access_key = credentials[:secret_access_key]
+      cloud.save
     end
 
     def self.create_credentials(account_holder_access_key_id, account_holder_secret_access_key)
@@ -139,7 +139,7 @@ module Koseki
       user = iam.users.get('koseki') || iam.users.create(:id => 'koseki')
       account_number = account_number_from_arn(user.arn)
 
-      # clear out any older keys for the koseki user
+      # clear out any older keys for the koseki user (there's a limit of 2)
       if not user.access_keys.empty?
         for key in user.access_keys
           key.destroy
