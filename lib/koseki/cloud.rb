@@ -216,17 +216,17 @@ module Koseki
 
       def refresh_all
         puts "cloud=#{@cloud.name} region=#{name} at=start"
-        refresh_availability_zones
+        discover_availability_zones
         refresh_reserved_instances
         refresh_instances
         refresh_volumes
         puts "cloud=#{@cloud.name} region=#{name} at=finish"
       end
 
-      def refresh_availability_zones
+      def discover_availability_zones
         # http://alestic.com/2009/07/ec2-availability-zones
         #
-        puts "cloud=#{@cloud.name} region=#{name} fn=refresh_availability_zones at=start"
+        puts "cloud=#{@cloud.name} region=#{name} fn=discover_availability_zones at=start"
     
         for availability_zone in @compute.describe_availability_zones.body["availabilityZoneInfo"]
           logical_az = availability_zone["zoneName"]
@@ -264,11 +264,11 @@ module Koseki
               azm.availability_zone_id = az.id
             end
           rescue RuntimeError => err
-            puts "cloud=#{@cloud.name} region=#{name} az=#{logical_az} at=warning message=\"Can't determine AZ mapping: #{err}\""
+            puts "cloud=#{@cloud.name} region=#{name} fn=discover_availability_zones at=cannot_map_az az=#{logical_az} message=\"Can't determine AZ mapping: #{err}\""
             next
           end
         end
-        puts "cloud=#{@cloud.name} region=#{name} fn=refresh_availability_zones at=finish"
+        puts "cloud=#{@cloud.name} region=#{name} fn=discover_availability_zones at=finish"
 
       end
 
