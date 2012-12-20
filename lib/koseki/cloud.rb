@@ -57,7 +57,7 @@ module Koseki
 
       fresh = (already_existed and bill.last_modified == object.last_modified)
 
-      puts "cloud=#{name} fn=import_bill at=fresh object=#{object.key} last_modified_db=#{bill.last_modified} last_modified_object=#{object.last_modified} fresh=#{fresh}"
+      puts "cloud=#{name} fn=import_bill object=#{object.key} at=fresh last_modified_db=#{bill.last_modified} last_modified_object=#{object.last_modified} fresh=#{fresh}"
       if fresh
         return
       end
