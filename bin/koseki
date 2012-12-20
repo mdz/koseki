@@ -315,7 +315,7 @@ class Controller
       String :tax_type
       Float :total_cost
       String :availability_zone
-      String :user_slot
+      HStore :tags
     end
 
     @db.create_view(:active_reservations, "select region, logical_az, instance_type, sum(instance_count) as instance_count, fixed_price, usage_price, duration

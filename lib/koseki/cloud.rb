@@ -86,15 +86,22 @@ module Koseki
           cloud = accounts[account_number]
           line.cloud_id = cloud ? cloud.id : nil
           line.line_number = line_number
+          line.tags = Sequel::Postgres::HStore.new([])
 
           fields.each do |key, value|
-            column_name = key.gsub(/::/, '/').
-              gsub(/([A-Z]+)([A-Z][a-z])/,'\1_\2').
-              gsub(/([a-z\d])([A-Z])/,'\1_\2').
-              tr("-", "_").
-              tr(":", "_").
-              downcase
-            line.send((column_name+'=').to_sym, value)
+            if key.start_with? "user:"
+              # store user tags in the tags column
+              tag_name, tag_value = key.split(':', 2)
+              line.tags[tag_name] = tag_value
+            else
+              # convert CSV column heading into database column name
+              column_name = key.gsub(/::/, '/').
+                gsub(/([A-Z]+)([A-Z][a-z])/,'\1_\2').
+                gsub(/([a-z\d])([A-Z])/,'\1_\2').
+                tr("-", "_").
+                downcase
+              line.send((column_name+'=').to_sym, value)
+            end
           end
         end
       end
