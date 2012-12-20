@@ -47,68 +47,68 @@ module Koseki
 
     def import_bill(object)
       puts "cloud=#{name} fn=import_bill object=#{object.key} at=start"
-      already_existed = true
-      bill = AWSBill.find_or_create(:cloud_id => id, :name => object.key) do |bill|
-        bill.cloud_id = id
-        bill.name = object.key
-        bill.last_modified = object.last_modified
-        already_existed = false
-      end
-
-      fresh = (already_existed and bill.last_modified == object.last_modified)
-
-      puts "cloud=#{name} fn=import_bill object=#{object.key} at=fresh last_modified_db=#{bill.last_modified} last_modified_object=#{object.last_modified} fresh=#{fresh}"
-      if fresh
-        return
-      end
-
-      old_records = Koseki::AWSBillLineItem.where(:aws_bill_id => bill.id)
-      old_record_count = old_records.count
-      old_records.delete
-
-      accounts = Koseki::Cloud.all.reduce({}) {|h,c| h[c.account_number] = c; h}
-
-      field_names = []
-      line_number = 0
-      CSV.parse(object.body) do |row|
-        line_number += 1
-        if row[0] == 'InvoiceID'
-          field_names = row
-          next
+      db.transaction do
+        already_existed = true
+        bill = AWSBill.find_or_create(:cloud_id => id, :name => object.key) do |bill|
+          bill.cloud_id = id
+          bill.name = object.key
+          bill.last_modified = object.last_modified
+          already_existed = false
         end
 
-        fields = Hash[field_names.zip(row)]
-        account_number = fields['LinkedAccountId']
-        
-        line = Koseki::AWSBillLineItem.create do |line|
-          line.aws_bill_id = bill.id
-          line.last_modified = object.last_modified
-          cloud = accounts[account_number]
-          line.cloud_id = cloud ? cloud.id : nil
-          line.line_number = line_number
-          line.tags = Sequel::Postgres::HStore.new([])
+        fresh = (already_existed and bill.last_modified == object.last_modified)
 
-          fields.each do |key, value|
-            if key.start_with? "user:"
-              # store user tags in the tags column
-              tag_name = key.slice(/:(.*)$/, 1)
-              line.tags[tag_name] = value
-            else
-              # convert CSV column heading into database column name
-              column_name = key.gsub(/::/, '/').
-                gsub(/([A-Z]+)([A-Z][a-z])/,'\1_\2').
-                gsub(/([a-z\d])([A-Z])/,'\1_\2').
-                tr("-", "_").
-                downcase
-              line.send((column_name+'=').to_sym, value)
+        puts "cloud=#{name} fn=import_bill object=#{object.key} at=fresh last_modified_db=#{bill.last_modified} last_modified_object=#{object.last_modified} fresh=#{fresh}"
+        if fresh
+          return
+        end
+
+        expired_records = Koseki::AWSBillLineItem.where(:aws_bill_id => bill.id)
+        expired_record_count = expired_records.count
+        expired_records.delete
+        new_records = 0
+
+        accounts = Koseki::Cloud.all.reduce({}) {|h,c| h[c.account_number] = c; h}
+
+        field_names = []
+        line_number = 0
+        CSV.parse(object.body) do |row|
+          line_number += 1
+          if row[0] == 'InvoiceID'
+            field_names = row
+            next
+          end
+
+          fields = Hash[field_names.zip(row)]
+          account_number = fields['LinkedAccountId']
+          
+          line = Koseki::AWSBillLineItem.create do |line|
+            new_records += 1
+            line.aws_bill_id = bill.id
+            line.line_number = line_number
+            line.tags = Sequel::Postgres::HStore.new([])
+
+            fields.each do |key, value|
+              if key.start_with? "user:"
+                # store user tags in the tags column
+                tag_name = key.slice(/:(.*)$/, 1)
+                line.tags[tag_name] = value
+              else
+                # convert CSV column heading into database column name
+                column_name = key.gsub(/::/, '/').
+                  gsub(/([A-Z]+)([A-Z][a-z])/,'\1_\2').
+                  gsub(/([a-z\d])([A-Z])/,'\1_\2').
+                  tr("-", "_").
+                  downcase
+                line.send((column_name+'=').to_sym, value)
+              end
             end
           end
         end
+   
+        bill.update(:last_modified => object.last_modified)
+        puts "cloud=#{name} fn=import_bill at=finish object=#{object.key} new_records=#{new_records} expired_records=#{expired_record_count}"
       end
- 
-      bill.update(:last_modified => object.last_modified)
-        
-      puts "cloud=#{name} fn=import_bill at=finish object=#{object.key} lines=#{line_number} old_records=#{old_record_count}"
     end
 
     def self.register(params)

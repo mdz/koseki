@@ -280,8 +280,6 @@ class Controller
 
     @db.create_table :aws_bill_line_items do
       foreign_key :aws_bill_id, :aws_bills
-      foreign_key :cloud_id, :clouds
-      DateTime :last_modified, :null => false
       Integer :line_number, :null => false
 
       # InvoiceID,PayerAccountId,LinkedAccountId,RecordType,RecordID,BillingPeriodStartDate,BillingPeriodEndDate,InvoiceDate,PayerAccountName,LinkedAccountName,TaxationAddress,PayerPONumber,ProductCode,ProductName,SellerOfRecord,UsageType,Operation,RateId,ItemDescription,UsageStartDate,UsageEndDate,UsageQuantity,BlendedRate,CurrencyCode,CostBeforeTax,Credits,TaxAmount,TaxType,TotalCost
