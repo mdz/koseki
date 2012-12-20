@@ -216,7 +216,12 @@ module Koseki
 
       def refresh_all
         puts "cloud=#{@cloud.name} region=#{name} at=start"
-        discover_availability_zones
+
+        # This doesn't seem to be working for most of our accounts, and just
+        # reports no RIs available in every AZ.  Disabled for now since we
+        # don't need it to calculate RI utilization anyway.
+        #discover_availability_zones
+       
         refresh_reserved_instances
         refresh_instances
         refresh_volumes
