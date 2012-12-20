@@ -91,8 +91,8 @@ module Koseki
           fields.each do |key, value|
             if key.start_with? "user:"
               # store user tags in the tags column
-              tag_name, tag_value = key.split(':', 2)
-              line.tags[tag_name] = tag_value
+              tag_name = key.slice(/:(.*)$/, 1)
+              line.tags[tag_name] = value
             else
               # convert CSV column heading into database column name
               column_name = key.gsub(/::/, '/').
