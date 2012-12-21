@@ -1,7 +1,7 @@
 module Koseki
   class AWSBill < Sequel::Model
     def self.refresh_from_csv_in_s3(cloud, object)
-      puts "cloud=#{cloud.name} fn=import_bill object=#{object.key} at=start"
+      puts "cloud=#{cloud.name} fn=refresh_from_csv_in_s3 object=#{object.key} at=start"
       db.transaction do
         already_existed = true
         bill = AWSBill.find_or_create(:cloud_id => cloud.id, :name => object.key) do |bill|
@@ -13,7 +13,7 @@ module Koseki
 
         if already_existed
           fresh = (bill.last_modified == object.last_modified)
-          puts "cloud=#{cloud.name} fn=import_bill object=#{object.key} at=fresh last_modified_old=#{bill.last_modified} last_modified_new=#{object.last_modified} fresh=#{fresh}"
+          puts "cloud=#{cloud.name} fn=refresh_from_csv_in_s3 object=#{object.key} at=fresh last_modified_old=#{bill.last_modified} last_modified_new=#{object.last_modified} fresh=#{fresh}"
           return if fresh
         end
 
@@ -64,7 +64,7 @@ module Koseki
         end
 
         bill.update(:last_modified => object.last_modified)
-        puts "cloud=#{cloud.name} fn=import_bill at=finish object=#{object.key} new_records=#{new_records} expired_records=#{expired_record_count}"
+        puts "cloud=#{cloud.name} fn=refresh_from_csv_in_s3 at=finish object=#{object.key} new_records=#{new_records} expired_records=#{expired_record_count}"
       end
     end
   end
