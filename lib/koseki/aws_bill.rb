@@ -13,7 +13,7 @@ module Koseki
 
         if already_existed
           fresh = (bill.last_modified == object.last_modified)
-          puts "cloud=#{cloud.name} fn=refresh_from_csv_in_s3 object=#{object.key} at=fresh last_modified_old=#{bill.last_modified} last_modified_new=#{object.last_modified} fresh=#{fresh}"
+          puts "cloud=#{cloud.name} fn=refresh_from_csv_in_s3 object=#{object.key} at=fresh current=#{bill.last_modified} new=#{object.last_modified} fresh=#{fresh}"
           return if fresh
         end
 
