@@ -244,6 +244,7 @@ module Koseki
           Reservation.find_or_create(:id => ri["reservedInstancesId"]) do |r|
             r.id = ri["reservedInstancesId"]
             r.cloud_id = @cloud.id
+            r.region = name
             r.logical_az = ri["availabilityZone"]
             r.az_id = azmap[r.logical_az]
             r.instance_type = ri["instanceType"]
