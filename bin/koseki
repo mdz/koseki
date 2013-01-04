@@ -211,6 +211,7 @@ class Controller
       DateTime :end_time, :null => false
       Integer :fixed_price, :null => false
       Integer :usage_price, :null => false
+      DateTime :last_seen, :null => false
     end
 
     @db.create_table :instances do

@@ -240,8 +240,9 @@ module Koseki
         puts "cloud=#{@cloud.name} region=#{name} fn=refresh_reserved_instances at=start"
         count = 0
         new = 0
+        now = Time.now
         for ri in @compute.describe_reserved_instances.body["reservedInstancesSet"]
-          Reservation.find_or_create(:id => ri["reservedInstancesId"]) do |r|
+          r = Reservation.find_or_create(:id => ri["reservedInstancesId"]) do |r|
             r.id = ri["reservedInstancesId"]
             r.cloud_id = @cloud.id
             r.region = name
@@ -255,12 +256,34 @@ module Koseki
             r.offering_type = ri["offeringType"]
             r.fixed_price = ri["fixedPrice"] * 1000
             r.usage_price = ri["usagePrice"] * 1000
+            r.last_seen = now
             new += 1
+          end
+
+          if r.last_seen != now
+            # if we found an existing record, update it
+            Reservation.where(:id => r.id).update(:last_seen => now)
           end
           count += 1
         end
 
-        puts "cloud=#{@cloud.name} region=#{name} fn=refresh_reserved_instances at=finish count=#{count} new=#{new}"
+        # Reserved instances sometimes disappear and are replaced with new ones
+        # shortly after purchase.  Explanation from AWS:
+        #
+        # The lease with id bbcd9749-e323-42bc-84a5-4f064a85859f was eligible
+        # for tiering, so we replaced with a new one
+        # (bbcd9749-c5b6-4e06-84d8-e064b198df7b) at a lower price.
+        # 
+        # All leases purchased are processed with a background job and tiering
+        # evaluation is part of this job. The first lease id is accessible
+        # before this job kick off, and then it is replaced with the new one if
+        # eligible for tiering.
+        
+        expired = Koseki::Reservation.where{(last_seen < now) & (end_time > now)}.where(:cloud_id => @cloud.id, :region => name)
+        expired_count = expired.count
+        expired.delete
+
+        puts "cloud=#{@cloud.name} region=#{name} fn=refresh_reserved_instances at=finish count=#{count} new=#{new} expired=#{expired_count}"
       end
 
       def refresh_instances
