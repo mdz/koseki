@@ -279,6 +279,9 @@ module Koseki
         # before this job kick off, and then it is replaced with the new one if
         # eligible for tiering.
         
+        # but we want to keep around RIs which have ended, even though they
+        # also (sometimes?) disappear from the API so we have a record
+
         expired = Koseki::Reservation.where{(last_seen < now) & (end_time > now)}.where(:cloud_id => @cloud.id, :region => name)
         expired_count = expired.count
         expired.delete
