@@ -378,6 +378,45 @@ SELECT * from merged_costs
 WHERE instances > 0;
 ")
 
+  @db.create_view(:invoice_costs, "
+with costs as (
+  select linked_account_name as account_name,
+    '#'||coalesce(nullif(linked_account_id,''),payer_account_id) as account_number,
+    coalesce(tags->'cloud',clouds.name, 'account #'||linked_account_id) as cloud,
+    coalesce(tags->'slot', coalesce(tags->'cloud', clouds.name, 'account #'||linked_account_id)||' untagged resources') as slot,
+    case when item_description like 'Sign up charge for subscription%' then true else false end as ri_purchase,
+    product_name, usage_type, operation, availability_zone, item_description, product_code, usage_quantity, blended_rate, total_cost,
+    case
+      when usage_type is null then 1
+      when billing_period_end_date < now() then 1
+      else extract(epoch from last_modified - billing_period_start_date) / extract(epoch from billing_period_end_date - billing_period_start_date)
+    end as pro_rata,
+    to_char(billing_period_start_date, 'YYYY-MM Mon') as month,
+    case
+      when billing_period_end_date > now() then 'month to date'
+      else 'full month'
+    end::text as month_type
+
+  from aws_bills
+    inner join aws_bill_line_items on (aws_bill_id = aws_bills.id)
+    left join clouds on (clouds.account_number = linked_account_id)
+  where
+    aws_bills.name like '%cost-allocation%' and
+    record_type = 'LinkedLineItem'
+),
+forecast as (
+  select account_name, account_number, cloud, slot, ri_purchase,
+    product_name, usage_type, operation, availability_zone, item_description, product_code, usage_quantity, blended_rate,
+    total_cost / pro_rata as total_cost,
+    pro_rata,
+    month,
+    'full month forecast'::text as month_type
+  from costs
+  where month_type = 'month to date'
+)
+select * from costs union select * from forecast;
+")
+
   end
 end
 
