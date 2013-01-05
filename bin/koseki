@@ -322,7 +322,7 @@ from reservations
 where now() < end_time
 group by region, logical_az, instance_type, fixed_price, usage_price, duration;")
 
-  @db.create_view(:instance_costs, "
+  @db.create_view(:running_instance_costs, "
 WITH
 running AS (
   SELECT instance_type, region, logical_az, count(instances.*) AS instance_count
