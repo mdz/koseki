@@ -146,24 +146,6 @@ class Controller
     end
   end
 
-  def sync_devclouds
-    yaml = YAML.load(STDIN)
-    yaml.each do |cloud, params|
-      next unless params.include? :ion_readonly_access_key_id and \
-                  params.include? :ion_readonly_secret_access_key and \
-                  params.include? :name
-
-      Koseki::Cloud.find_or_create(
-        :name => params[:name]
-      ) do |cloud|
-        cloud.name = params[:name]
-        cloud.access_key_id = params[:ion_readonly_access_key_id]
-        cloud.secret_access_key = params[:ion_readonly_secret_access_key]
-        puts "Adding: #{params[:name]}"
-      end
-    end
-  end
-
   def web
     Koseki::Web.run! 
   end
@@ -436,8 +418,6 @@ when 'initdb'
   Controller.new.initdb
 when 'migrate-db'
   Controller.new.migratedb
-when 'sync-devclouds'
-  Controller.new.sync_devclouds
 when 'web'
   Controller.new.web
 else
