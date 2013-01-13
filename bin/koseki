@@ -374,12 +374,7 @@ with costs as (
       else null end
     as fixed_cost,
     invoice_id, product_name, usage_type, operation, availability_zone, item_description, product_code, usage_quantity, blended_rate, total_cost,
-    case
-      when usage_type is null then 1
-      when credits <> 0 then 1
-      when billing_period_end_date < now() then 1
-      else extract(epoch from last_modified - billing_period_start_date) / extract(epoch from billing_period_end_date - billing_period_start_date)
-    end as pro_rata,
+    extract(epoch from last_modified - billing_period_start_date) / extract(epoch from billing_period_end_date - billing_period_start_date) as partial_billing_period,
     to_char(billing_period_start_date, 'YYYY-MM Mon') as month,
     case
       when billing_period_end_date > now() then 'month to date'
@@ -396,8 +391,11 @@ with costs as (
 forecast as (
   select account_name, account_number, cloud, slot, fixed_cost,
     invoice_id, product_name, usage_type, operation, availability_zone, item_description, product_code, usage_quantity, blended_rate,
-    total_cost / pro_rata as total_cost,
-    pro_rata,
+    case
+      when fixed_cost is not null then total_cost
+      else total_cost / partial_billing_period
+    end as total_cost,
+    partial_billing_period,
     month,
     'full month forecast'::text as month_type
   from costs
