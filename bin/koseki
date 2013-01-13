@@ -367,10 +367,16 @@ with costs as (
     '#'||coalesce(nullif(linked_account_id,''),payer_account_id) as account_number,
     coalesce(tags->'cloud',clouds.name, 'account #'||linked_account_id) as cloud,
     coalesce(tags->'slot', coalesce(tags->'cloud', clouds.name, 'account #'||linked_account_id)||' untagged resources') as slot,
-    case when item_description like 'Sign up charge for subscription%' then true else false end as ri_purchase,
-    product_name, usage_type, operation, availability_zone, item_description, product_code, usage_quantity, blended_rate, total_cost,
+    case
+      when item_description like 'Sign up charge for subscription%' then 'reserved instance purchase'
+      when credits <> 0 then 'credit'
+      when product_code = 'AwsCBSupport' then 'support'
+      else null end
+    as fixed_cost,
+    invoice_id, product_name, usage_type, operation, availability_zone, item_description, product_code, usage_quantity, blended_rate, total_cost,
     case
       when usage_type is null then 1
+      when credits <> 0 then 1
       when billing_period_end_date < now() then 1
       else extract(epoch from last_modified - billing_period_start_date) / extract(epoch from billing_period_end_date - billing_period_start_date)
     end as pro_rata,
@@ -388,8 +394,8 @@ with costs as (
     record_type = 'LinkedLineItem'
 ),
 forecast as (
-  select account_name, account_number, cloud, slot, ri_purchase,
-    product_name, usage_type, operation, availability_zone, item_description, product_code, usage_quantity, blended_rate,
+  select account_name, account_number, cloud, slot, fixed_cost,
+    invoice_id, product_name, usage_type, operation, availability_zone, item_description, product_code, usage_quantity, blended_rate,
     total_cost / pro_rata as total_cost,
     pro_rata,
     month,
