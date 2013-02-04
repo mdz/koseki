@@ -374,7 +374,7 @@ with costs as (
       else null end
     as fixed_cost,
     invoice_id, product_name, usage_type, operation, availability_zone, item_description, product_code, usage_quantity, blended_rate, total_cost,
-    extract(epoch from last_modified - billing_period_start_date) / extract(epoch from billing_period_end_date - billing_period_start_date) as partial_billing_period,
+    extract(epoch from least(last_modified, billing_period_end_date) - billing_period_start_date) / extract(epoch from billing_period_end_date - billing_period_start_date) as partial_billing_period,
     to_char(billing_period_start_date, 'YYYY-MM Mon') as month,
     case
       when billing_period_end_date > now() then 'month to date'
