@@ -311,7 +311,7 @@ running AS (
 reserved AS (
   SELECT logical_az, instance_type, sum(instance_count) AS instance_count
   FROM reservations
-  WHERE now() < end_time and state = 'active'
+  WHERE state = 'active'
   GROUP BY logical_az, instance_type
 ),
 usage AS (
@@ -328,7 +328,7 @@ reserved_costs_raw AS (
     greatest(0,least(instance_count, running_reserved - coalesce(sum(instance_count) OVER previous_matching_reservations,0))) AS instances
   from usage
     inner join reservations using (region, logical_az, instance_type)
-  where running_reserved > 0 and reservations.end_time > now() and reservations.state = 'active'
+  where running_reserved > 0 and reservations.state = 'active'
   window previous_matching_reservations AS (PARTITION BY region, logical_az, instance_type ORDER BY usage_price ASC ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING)
 
 ),
