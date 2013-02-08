@@ -194,6 +194,7 @@ class Controller
       Integer :fixed_price, :null => false
       Integer :usage_price, :null => false
       DateTime :last_seen, :null => false
+      String :state, :null => false
     end
 
     @db.create_table :instances do

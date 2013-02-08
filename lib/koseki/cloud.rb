@@ -257,12 +257,13 @@ module Koseki
             r.fixed_price = ri["fixedPrice"] * 1000
             r.usage_price = ri["usagePrice"] * 1000
             r.last_seen = now
+            r.state = ri["state"]
             new += 1
           end
 
           if r.last_seen != now
             # if we found an existing record, update it
-            Reservation.where(:id => r.id).update(:last_seen => now)
+            Reservation.where(:id => r.id).update(:last_seen => now, :state => ri["state"])
           end
           count += 1
         end
