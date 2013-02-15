@@ -355,7 +355,7 @@ module Koseki
 
           if v.last_seen != now
             # if we found an existing record, update it
-            v.update(:last_seen => now, :tags => Sequel::Postgres::HStore.new(volume.tags))
+            v.update(:last_seen => now, :tags => Sequel::Postgres::HStore.new(volume.tags), :server_id => volume.server_id)
           end
         end
 
