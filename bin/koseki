@@ -118,7 +118,7 @@ class Controller
         ) do |iop|
           iop.region = regionmap[region.name]
           iop.instance_type = instance_type.api_name
-          iop.price = instance_type.linux_price_per_hour * 1000
+          iop.price = instance_type.linux_price_per_hour
         end
       end
       for instance_type in region.ec2_reserved_instance_types(:medium)
@@ -130,18 +130,18 @@ class Controller
         ) do |irp|
           irp.region = regionmap[region.name]
           irp.instance_type = instance_type.api_name
-          irp.price_upfront = instance_type.prepay_1_year.to_f * 1000
-          irp.price_per_hour = instance_type.linux_price_per_hour_1_year.to_f * 1000
+          irp.price_upfront = instance_type.prepay_1_year.to_f
+          irp.price_per_hour = instance_type.linux_price_per_hour_1_year.to_f
         end
       end
       ebs = Koseki::EBSPrice.find_or_create(
         :region => regionmap[region.name]
       ) do |ebs|
-        ebs.standard_per_gb = region.ebs_price.standard_per_gb * 1000
-        ebs.standard_per_million_io = region.ebs_price.standard_per_million_io * 1000
-        ebs.preferred_per_gb = region.ebs_price.preferred_per_gb * 1000 rescue nil
-        ebs.preferred_per_iops = region.ebs_price.preferred_per_iops * 1000 rescue nil
-        ebs.s3_snaps_per_gb = region.ebs_price.s3_snaps_per_gb * 1000
+        ebs.standard_per_gb = region.ebs_price.standard_per_gb
+        ebs.standard_per_million_io = region.ebs_price.standard_per_million_io
+        ebs.preferred_per_gb = region.ebs_price.preferred_per_gb rescue nil
+        ebs.preferred_per_iops = region.ebs_price.preferred_per_iops rescue nil
+        ebs.s3_snaps_per_gb = region.ebs_price.s3_snaps_per_gb
       end
     end
   end
@@ -191,8 +191,8 @@ class Controller
       DateTime :start_time, :null => false
       Integer :duration, :null => false
       DateTime :end_time, :null => false
-      Integer :fixed_price, :null => false
-      Integer :usage_price, :null => false
+      BigDecimal :fixed_price, :null => false
+      BigDecimal :usage_price, :null => false
       DateTime :last_seen, :null => false
       String :state, :null => false
     end
@@ -217,15 +217,15 @@ class Controller
     @db.create_table :instance_ondemand_prices do
       String :instance_type, :null => false
       String :region, :null => false
-      Integer :price, :null => false
+      BigDecimal :price, :null => false
       unique ([:instance_type, :region])
     end
 
     @db.create_table :instance_reserved_prices do
       String :instance_type, :null => false
       String :region, :null => false
-      Integer :price_upfront, :null => false
-      Integer :price_per_hour, :null => false
+      BigDecimal :price_upfront, :null => false
+      BigDecimal :price_per_hour, :null => false
       unique ([:instance_type, :region])
     end
 
@@ -246,12 +246,12 @@ class Controller
 
     @db.create_table :ebs_prices do
       String :region, :null => false
-      Integer :standard_per_gb
-      Integer :standard_per_million_io
-      Integer :preferred_per_gb
-      Integer :preferred_per_million_io
-      Integer :preferred_per_iops
-      Integer :s3_snaps_per_gb
+      BigDecimal :standard_per_gb
+      BigDecimal :standard_per_million_io
+      BigDecimal :preferred_per_gb
+      BigDecimal :preferred_per_million_io
+      BigDecimal :preferred_per_iops
+      BigDecimal :s3_snaps_per_gb
     end
 
     @db.create_table :aws_bills do
@@ -288,14 +288,14 @@ class Controller
       String :item_description
       DateTime :usage_start_date
       DateTime :usage_end_date
-      Float :usage_quantity
-      Float :blended_rate
+      BigDecimal :usage_quantity
+      BigDecimal :blended_rate
       String :currency_code
-      Float :cost_before_tax
-      Float :credits
-      Float :tax_amount
+      BigDecimal :cost_before_tax
+      BigDecimal :credits
+      BigDecimal :tax_amount
       String :tax_type
-      Float :total_cost
+      BigDecimal :total_cost
       String :availability_zone
       HStore :tags
     end
