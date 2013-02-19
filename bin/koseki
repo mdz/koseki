@@ -241,6 +241,8 @@ class Controller
       String :server_id
       Boolean :active, :null => false
       Integer :size, :null => false
+      String :type
+      Integer :iops
       HStore :tags
     end
 
