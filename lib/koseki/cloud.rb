@@ -382,7 +382,7 @@ module Koseki
     end
 
     def region(name)
-      for region in @regions
+      for region in regions
         return region if region.name == name
       end
       raise 'Unknown region: #{name}'
