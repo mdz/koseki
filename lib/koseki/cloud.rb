@@ -152,6 +152,7 @@ module Koseki
 
     class Region
       attr_reader :name
+      attr_reader :compute
 
       def initialize(cloud, region=nil)
         @cloud = cloud
@@ -378,6 +379,13 @@ module Koseki
 
     def regions
       @regions ||= Region.new(self).all
+    end
+
+    def region(name)
+      for region in @regions
+        return region if region.name == name
+      end
+      raise 'Unknown region: #{name}'
     end
 
   end
