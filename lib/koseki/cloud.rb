@@ -152,6 +152,7 @@ module Koseki
 
     class Region
       attr_reader :name
+      attr_reader :compute
 
       def initialize(cloud, region=nil)
         @cloud = cloud
@@ -348,6 +349,8 @@ module Koseki
             v.last_seen = now
             v.size = volume.size
             v.active = volume.state != 'deleted'
+            v.iops = volume.iops
+            v.type = volume.type
             v.tags = Sequel::Postgres::HStore.new(volume.tags)
             new += 1
           end
@@ -355,7 +358,11 @@ module Koseki
 
           if v.last_seen != now
             # if we found an existing record, update it
-            v.update(:last_seen => now, :tags => Sequel::Postgres::HStore.new(volume.tags), :server_id => volume.server_id)
+            v.update(:last_seen => now,
+                    :tags => Sequel::Postgres::HStore.new(volume.tags),
+                    :server_id => volume.server_id,
+                    :iops => volume.iops,
+                    :type => volume.type)
           end
         end
 
@@ -378,6 +385,13 @@ module Koseki
 
     def regions
       @regions ||= Region.new(self).all
+    end
+
+    def region(name)
+      for region in regions
+        return region if region.name == name
+      end
+      raise 'Unknown region: #{name}'
     end
 
   end
