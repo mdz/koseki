@@ -118,7 +118,7 @@ class Controller
         ) do |iop|
           iop.region = regionmap[region.name]
           iop.instance_type = instance_type.api_name
-          iop.price = instance_type.linux_price_per_hour * 1000
+          iop.price = instance_type.linux_price_per_hour * 1000 rescue nil
         end
       end
       for instance_type in region.ec2_reserved_instance_types(:medium)
