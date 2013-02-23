@@ -380,7 +380,7 @@ with costs as (
       else null
     end as instance_type,
     billing_period_start_date,
-    extract(epoch from least(last_modified, billing_period_end_date) - billing_period_start_date) / extract(epoch from billing_period_end_date - billing_period_start_date) as partial_billing_period,
+    (extract(epoch from least(last_modified, billing_period_end_date) - billing_period_start_date) / extract(epoch from billing_period_end_date - billing_period_start_date))::numeric as partial_billing_period,
     to_char(billing_period_start_date, 'YYYY-MM Mon') as month,
     case
       when billing_period_end_date > now() then 'month to date'
@@ -400,7 +400,7 @@ forecast as (
     case
       when fixed_cost is not null then usage_quantity
       else usage_quantity / partial_billing_period
-    end::numeric as usage_quantity,
+    end as usage_quantity,
     blended_rate,
     case
       when fixed_cost is not null then total_cost
