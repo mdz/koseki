@@ -254,7 +254,6 @@ class Controller
       BigDecimal :standard_per_gb
       BigDecimal :standard_per_million_io
       BigDecimal :preferred_per_gb
-      BigDecimal :preferred_per_million_io
       BigDecimal :preferred_per_iops
       BigDecimal :s3_snaps_per_gb
     end
