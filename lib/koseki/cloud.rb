@@ -255,8 +255,8 @@ module Koseki
             r.duration = ri["duration"]
             r.end_time = r.start_time + r.duration
             r.offering_type = ri["offeringType"]
-            r.fixed_price = ri["fixedPrice"] * 1000
-            r.usage_price = ri["usagePrice"] * 1000
+            r.fixed_price = ri["fixedPrice"]
+            r.usage_price = ri["usagePrice"]
             r.last_seen = now
             r.state = ri["state"]
             new += 1
