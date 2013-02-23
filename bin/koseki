@@ -104,7 +104,7 @@ class Controller
 
     price_list = AwsPricing::PriceList.new
 
-    db.transaction do
+    @db.transaction do
 
       Koseki::InstanceOndemandPrice.delete
       Koseki::InstanceReservedPrice.delete
