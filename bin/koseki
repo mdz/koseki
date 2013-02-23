@@ -104,44 +104,47 @@ class Controller
 
     price_list = AwsPricing::PriceList.new
 
-    Koseki::InstanceOndemandPrice.delete
-    Koseki::InstanceReservedPrice.delete
+    db.transaction do
 
-    for region in price_list.regions
-      if not regionmap.has_key? region.name
-        raise "Unknown region: #{region.name}"
-      end
-      for instance_type in region.ec2_on_demand_instance_types
-        Koseki::InstanceOndemandPrice.find_or_create(
-          :region => regionmap[region.name],
-          :instance_type => instance_type.api_name
-        ) do |iop|
-          iop.region = regionmap[region.name]
-          iop.instance_type = instance_type.api_name
-          iop.price = instance_type.linux_price_per_hour * 1000 rescue next
-        end
-      end
-      for instance_type in region.ec2_reserved_instance_types(:medium)
-        next unless instance_type.prepay_1_year and instance_type.linux_price_per_hour_1_year
+      Koseki::InstanceOndemandPrice.delete
+      Koseki::InstanceReservedPrice.delete
 
-        irp = Koseki::InstanceReservedPrice.find_or_create(
-          :region => regionmap[region.name],
-          :instance_type => instance_type.api_name
-        ) do |irp|
-          irp.region = regionmap[region.name]
-          irp.instance_type = instance_type.api_name
-          irp.price_upfront = instance_type.prepay_1_year.to_f * 1000
-          irp.price_per_hour = instance_type.linux_price_per_hour_1_year.to_f * 1000
+      for region in price_list.regions
+        if not regionmap.has_key? region.name
+          raise "Unknown region: #{region.name}"
         end
-      end
-      ebs = Koseki::EBSPrice.find_or_create(
-        :region => regionmap[region.name]
-      ) do |ebs|
-        ebs.standard_per_gb = region.ebs_price.standard_per_gb * 1000
-        ebs.standard_per_million_io = region.ebs_price.standard_per_million_io * 1000
-        ebs.preferred_per_gb = region.ebs_price.preferred_per_gb * 1000 rescue nil
-        ebs.preferred_per_iops = region.ebs_price.preferred_per_iops * 1000 rescue nil
-        ebs.s3_snaps_per_gb = region.ebs_price.s3_snaps_per_gb * 1000
+        for instance_type in region.ec2_on_demand_instance_types
+          Koseki::InstanceOndemandPrice.find_or_create(
+            :region => regionmap[region.name],
+            :instance_type => instance_type.api_name
+          ) do |iop|
+            iop.region = regionmap[region.name]
+            iop.instance_type = instance_type.api_name
+            iop.price = instance_type.linux_price_per_hour * 1000 rescue next
+          end
+        end
+        for instance_type in region.ec2_reserved_instance_types(:medium)
+          next unless instance_type.prepay_1_year and instance_type.linux_price_per_hour_1_year
+
+          irp = Koseki::InstanceReservedPrice.find_or_create(
+            :region => regionmap[region.name],
+            :instance_type => instance_type.api_name
+          ) do |irp|
+            irp.region = regionmap[region.name]
+            irp.instance_type = instance_type.api_name
+            irp.price_upfront = instance_type.prepay_1_year.to_f * 1000
+            irp.price_per_hour = instance_type.linux_price_per_hour_1_year.to_f * 1000
+          end
+        end
+        ebs = Koseki::EBSPrice.find_or_create(
+          :region => regionmap[region.name]
+        ) do |ebs|
+          ebs.standard_per_gb = region.ebs_price.standard_per_gb * 1000
+          ebs.standard_per_million_io = region.ebs_price.standard_per_million_io * 1000
+          ebs.preferred_per_gb = region.ebs_price.preferred_per_gb * 1000 rescue nil
+          ebs.preferred_per_iops = region.ebs_price.preferred_per_iops * 1000 rescue nil
+          ebs.s3_snaps_per_gb = region.ebs_price.s3_snaps_per_gb * 1000
+        end
       end
     end
   end
