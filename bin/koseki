@@ -400,7 +400,7 @@ forecast as (
     case
       when fixed_cost is not null then usage_quantity
       else usage_quantity / partial_billing_period
-    end as usage_quantity,
+    end::numeric as usage_quantity,
     blended_rate,
     case
       when fixed_cost is not null then total_cost
