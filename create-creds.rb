@@ -18,12 +18,29 @@ end
 key = user.access_keys.create
 
 policy_document = {
-  "Statement" => [
-    {
-      "Effect" => "Allow",
-      "Action" => ["ec2:describe*"],
-      "Resource" => "*"
-    }
+  "Statement" =>
+  [
+   {
+     "Effect" => "Allow",
+     "Action" => ["ec2:describe*"],
+     "Resource" => "*"
+   },
+   {
+     "Effect" => "Allow",
+     "Action" => [
+                  "s3:GetBucketAcl",
+                  "s3:GetBucketLocation",
+                  "s3:GetBucketLogging",
+                  "s3:GetBucketNotification",
+                  "s3:GetBucketPolicy",
+                  "s3:GetBucketVersioning",
+                  "s3:GetLifecycleConfiguration",
+                  "s3:ListAllMyBuckets",
+                  "s3:ListBucket",
+                  "s3:ListBucketVersions"
+                 ],
+     "Resource" => ["arn:aws:s3:::*/*"]
+   }
   ]
 }
 policy = user.policies.get('koseki-polling') ||
