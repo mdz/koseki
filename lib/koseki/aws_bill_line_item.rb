@@ -49,10 +49,10 @@ module Koseki
     end
 
     def self.purge(bill)
-      expired_records = self.where(:aws_bill_id => bill.id)
-      expired_record_count = expired_records.count
-      expired_records.delete
-      return expired_record_count
+      records = self.where(:aws_bill_id => bill.id)
+      record_count = expired_records.count
+      records.delete
+      return record_count
     end
   end
 end
