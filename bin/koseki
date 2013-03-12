@@ -13,6 +13,7 @@ require 'yaml'
 
 class Controller
   def initialize
+    Sequel.default_timezone = :utc
     @db = Sequel.connect(ENV['DATABASE_URL'])
     @db.extension :pg_hstore
     STDOUT.sync = true
