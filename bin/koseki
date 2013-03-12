@@ -383,7 +383,7 @@ with costs as (
     (extract(epoch from least(last_modified, billing_period_end_date) - billing_period_start_date) / extract(epoch from billing_period_end_date - billing_period_start_date))::numeric as partial_billing_period,
     to_char(billing_period_start_date, 'YYYY-MM Mon') as month,
     case
-      when billing_period_end_date > now() then 'month to date'
+      when billing_period_end_date > last_modified then 'month to date'
       else 'full month'
     end::text as month_type
 
