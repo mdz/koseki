@@ -17,54 +17,11 @@ module Koseki
           return if fresh
         end
 
-        expired_records = Koseki::AWSBillLineItem.where(:aws_bill_id => bill.id)
-        expired_record_count = expired_records.count
-        expired_records.delete
-        new_records = 0
-
-        accounts = Koseki::Cloud.all.reduce({}) {|h,c| h[c.account_number] = c; h}
-
-        field_names = []
-        line_number = 0
-        CSV.parse(object.body) do |row|
-          line_number += 1
-          if row[0] == 'InvoiceID'
-            field_names = row
-            next
-          elsif row.length <= 1
-            # first line of cost allocation report is a comment
-            next
-          end
-
-          fields = Hash[field_names.zip(row)]
-          account_number = fields['LinkedAccountId']
-
-          line = Koseki::AWSBillLineItem.create do |line|
-            new_records += 1
-            line.aws_bill_id = bill.id
-            line.line_number = line_number
-            line.tags = Sequel::Postgres::HStore.new([])
-
-            fields.each do |key, value|
-              if key.start_with? "user:"
-                # store user tags in the tags column
-                tag_name = key.slice(/:(.*)$/, 1)
-                line.tags[tag_name] = value
-              else
-                # convert CSV column heading into database column name
-                column_name = key.gsub(/::/, '/').
-                  gsub(/([A-Z]+)([A-Z][a-z])/,'\1_\2').
-                  gsub(/([a-z\d])([A-Z])/,'\1_\2').
-                  tr("-", "_").
-                  downcase
-                line.send((column_name+'=').to_sym, value)
-              end
-            end
-          end
-        end
+        expired_records = Koseki::AWSBillLineItem.purge(bill)
+        new_records = Koseki::AWSBillLineItem.import_csv(bill, object.body)
 
         bill.update(:last_modified => object.last_modified)
-        puts "cloud=#{cloud.name} fn=refresh_from_csv_in_s3 at=finish object=#{object.key} new_records=#{new_records} expired_records=#{expired_record_count}"
+        puts "cloud=#{cloud.name} fn=refresh_from_csv_in_s3 at=finish object=#{object.key} new_records=#{new_records} expired_records=#{expired_records}"
       end
     end
   end
