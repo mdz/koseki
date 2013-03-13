@@ -456,7 +456,7 @@ when 'poll-forever'
   Controller.new.poll_forever
 when 'get-prices'
   Controller.new.import_pricelist
-when 'initdb'
+when 'init-db'
   Controller.new.initdb
 when 'migrate-db'
   Controller.new.migratedb
