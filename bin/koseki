@@ -29,8 +29,7 @@ class Controller
     require "koseki/instance_ondemand_price"
     require "koseki/ebs_price"
     require "koseki/aws_bill"
-    require "koseki/aws_bill_line_item"
-    require 'koseki/web'
+    require "koseki/web"
   end
 
   def poll_clouds(cloud_names=nil)
@@ -158,6 +157,15 @@ class Controller
     system 'sequel', '-m', 'migrations', ENV['DATABASE_URL']
   end
 
+  def import_aws_bill(args)
+    cloud_name = args[0]
+    path = args[1]
+    cloud = Koseki::Cloud[:name => cloud_name]
+    file = File.open(path)
+    Koseki::AWSBill.import_file(cloud, File.basename(path), file.read, file.mtime)
+    file.close
+  end
+
   def initdb
     @db.create_table :clouds do
       primary_key :id
@@ -263,6 +271,7 @@ class Controller
       primary_key :id
       foreign_key :cloud_id, :clouds
       String :name, :null => false
+      String :type, :null => false
       DateTime :last_modified, :null => false
       unique ([:cloud_id, :name])
     end
@@ -271,7 +280,9 @@ class Controller
       foreign_key :aws_bill_id, :aws_bills
       Integer :line_number, :null => false
 
+      # billing-csv and cost-allocation share these fields:
       # InvoiceID,PayerAccountId,LinkedAccountId,RecordType,RecordID,BillingPeriodStartDate,BillingPeriodEndDate,InvoiceDate,PayerAccountName,LinkedAccountName,TaxationAddress,PayerPONumber,ProductCode,ProductName,SellerOfRecord,UsageType,Operation,RateId,ItemDescription,UsageStartDate,UsageEndDate,UsageQuantity,BlendedRate,CurrencyCode,CostBeforeTax,Credits,TaxAmount,TaxType,TotalCost
+
       String :invoice_id
       String :payer_account_id
       String :linked_account_id
@@ -301,8 +312,20 @@ class Controller
       BigDecimal :tax_amount
       String :tax_type
       BigDecimal :total_cost
+
+      # only in cost allocation report
+      # InvoiceID,PayerAccountId,LinkedAccountId,RecordType,RecordID,BillingPeriodStartDate,BillingPeriodEndDate,InvoiceDate,PayerAccountName,LinkedAccountName,TaxationAddress,PayerPONumber,ProductCode,ProductName,SellerOfRecord,UsageType,Operation,AvailabilityZone,RateId,ItemDescription,UsageStartDate,UsageEndDate,UsageQuantity,BlendedRate,CurrencyCode,CostBeforeTax,Credits,TaxAmount,TaxType,TotalCost,user:xxx,user:yyy
       String :availability_zone
-      HStore :tags
+      HStore :tags # used to store all user tags
+
+      # only in detail report
+      # InvoiceID,PayerAccountId,LinkedAccountId,RecordType,ProductName,RateId,SubscriptionId,PricingPlanId,UsageType,Operation,AvailabilityZone,ReservedInstance,ItemDescription,UsageStartDate,UsageEndDate,UsageQuantity,BlendedRate,BlendedCost,UnBlendedRate,UnBlendedCost
+      String :subscription_id
+      String :pricing_plan_id
+      String :reserved_instance
+      BigDecimal :blended_cost
+      BigDecimal :un_blended_rate
+      BigDecimal :un_blended_cost
     end
 
   @db.create_view(:running_instance_costs, "
@@ -438,6 +461,8 @@ when 'migrate-db'
   Controller.new.migratedb
 when 'web'
   Controller.new.web
+when 'import-aws-bill'
+  Controller.new.import_aws_bill(ARGV[1..-1])
 else
   raise "Unknown command"
 end
