@@ -167,6 +167,7 @@ class Controller
   end
 
   def initdb
+    @db.run "create extension hstore"
     @db.create_table :clouds do
       primary_key :id
       String :name, :unique => true
