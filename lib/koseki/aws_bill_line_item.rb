@@ -1,5 +1,3 @@
-require 'koseki/aws_line_item_base'
-
 module Koseki
   class AWSBillLineItem < Sequel::Model
     def self.import_csv(bill, csv)
