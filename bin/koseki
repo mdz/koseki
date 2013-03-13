@@ -416,7 +416,7 @@ with costs as (
     inner join aws_bill_line_items on (aws_bill_id = aws_bills.id)
     left join clouds on (clouds.account_number = linked_account_id)
   where
-    aws_bills.name like '%cost-allocation%' and
+    aws_bills.type = 'cost-allocation' and
     record_type = 'LinkedLineItem'
 ),
 forecast as (
