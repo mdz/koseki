@@ -28,18 +28,8 @@ module Koseki
 
       bucket = storage.directories.get(programmatic_billing_bucket)
 
-      hooks = {
-        /#{account_number}-aws-billing-csv-\d\d\d\d-\d\d.csv/ => Koseki::AWSBill.method(:refresh_from_csv_in_s3),
-        /#{account_number}-aws-cost-allocation-\d\d\d\d-\d\d.csv/ => Koseki::AWSBill.method(:refresh_from_csv_in_s3),
-        /#{account_number}-aws-billing-detailed-line-items-\d\d\d\d-\d\d.csv.zip/ => nil
-      }
-
       for object in bucket.files
-        hooks.each do |pattern, method|
-          if method and pattern.match(object.key)
-            method.call self, object
-          end
-        end
+        Koseki::AWSBill.import_s3_object(self, object)
       end
 
       puts "cloud=#{name} fn=refresh_programmatic_billing at=finish"

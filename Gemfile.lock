@@ -49,6 +49,7 @@ GEM
     treetop (1.4.11)
       polyglot
       polyglot (>= 0.3.1)
+    zip (2.0.2)
 
 PLATFORMS
   ruby
@@ -62,3 +63,4 @@ DEPENDENCIES
   rest-client
   sequel
   sinatra
+  zip
