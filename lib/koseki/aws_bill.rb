@@ -4,6 +4,7 @@ require 'zip'
 module Koseki
   class AWSBill < Sequel::Model
     def self.import_s3_object(cloud, object)
+      puts "cloud=#{cloud.name} fn=import_s3_object object=#{object.key} at=start"
       import_file(cloud, object.key, object.body, object.last_modified)
     end
 
