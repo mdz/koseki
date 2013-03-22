@@ -71,7 +71,7 @@ module Koseki
 
     def import_data(format, body)
       if format == 'csv'
-        if type == 'billing-csv' or type == 'cost-allocation' or type == 'billing-detailed-line-items'
+        if type == 'billing-csv' or type == 'cost-allocation' or type == 'billing-detailed-line-items' or type == 'granular-line-items'
           return replace_line_items(body)
         else
           raise "Unknown bill type: #{type}"
