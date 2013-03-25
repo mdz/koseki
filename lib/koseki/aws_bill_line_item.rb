@@ -35,6 +35,10 @@ module Koseki
             record['tags'] ||= Sequel::Postgres::HStore.new([])
             tag_name = field_name.slice(/:(.*)$/, 1)
             record['tags'][tag_name] = value
+          elsif field_names[index] == 'UnBlendedRate' and value == ''
+            # Work around this broken record: "Estimated","098166147350","378407262360","LineItem","Amazon Elastic Compute Cloud","1103944","13502871","253204","SpotUsage","RunInstances:S0012","","N","M1 Standard Small (m1.small) Linux/UNIX Spot Instance-hour in US East (Virginia) in Zone #12","2013-03-23 09:00:00","2013-03-23 10:00:00","1.0","0.0070000000","0.0070000000","","0.0070000000"
+
+            record[column_names[index]] = nil
           else
             record[column_names[index]] = value
           end
