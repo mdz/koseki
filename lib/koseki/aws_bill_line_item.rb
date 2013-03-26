@@ -29,6 +29,7 @@ module Koseki
         :data => data,
         :format => :csv,
       }
+      new_records = db[temp_table].count
 
       # Generate a mapping of column names to SQL expressions which will do the conversions
       column_values = Hash.new
@@ -77,10 +78,8 @@ module Koseki
       db.drop_table(temp_table)
       return
 
-      new_records = 0 # XXX
-
       elapsed = Time.now-start_time
-      puts "fn=import_csv at=finish elapsed=#{elapsed.round} records_per_second=#{new_records/elapsed}"
+      puts "fn=import_csv at=finish elapsed=#{elapsed.round} new_records=#{new_records} records_per_second=#{new_records/elapsed}"
       return new_records
     end
 
