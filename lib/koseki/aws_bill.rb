@@ -1,21 +1,41 @@
 require 'koseki/aws_bill_line_item.rb'
 require 'zip'
-require 'open-uri'
 
 module Koseki
   class AWSBill < Sequel::Model
     def self.import_s3_object(cloud, object)
-      # open-uri downloads the whole file, so check freshness first
-      return if fresh?(cloud, object.key, object.last_modified)
+      last_modified = object.last_modified
+      filename = object.key
+      # don't bother fetching if we already know we're up to date
+      return if fresh?(cloud, filename, last_modified)
 
       url = object.url(Time.now + 3600)
-      import_stream(cloud, object.key, open(url), object.last_modified)
+      if object.key.end_with? '.zip'
+        # Holy /bin/sh!  I could not find a way to implement streaming
+        # processing in Ruby, At least url comes from fog and should not
+        # contain any shell escapes
+
+        filename = File.basename(object.key, '.zip')
+        stream = IO.popen("curl -s '#{url}' | gunzip")
+      else
+        stream = IO.popen(['curl', '-s', url])
+      end
+
+      import_stream(cloud, filename, stream, last_modified)
     end
 
     def self.import_file(cloud, path)
       filename = File.basename(path)
-      stat = File.stat(path)
-      import_stream(cloud, filename, open(path), stat.mtime)
+      last_modified = File.stat(path).mtime
+      return if fresh?(cloud, filename, last_modified)
+
+      if filename.end_with? '.zip'
+        filename = File.basename(filename, '.zip')
+        stream = IO.popen(['gunzip', '-c', path])
+      else
+        stream = open(path)
+      end
+      import_stream(cloud, filename, stream, last_modified)
     end
 
     def self.fresh?(cloud, filename, last_modified)
@@ -33,17 +53,6 @@ module Koseki
     def self.import_stream(cloud, filename, stream, last_modified)
       puts "cloud=#{cloud.name} fn=import_stream filename=#{filename} at=start"
 
-      return if fresh?(cloud, filename, last_modified)
-
-      if filename.end_with? '.zip'
-        # this assumes we can reopen the stream, but is roughly 25x faster than
-        # using Zip::ZipFile
- 
-        filename = File.basename(filename, '.zip')
-        uncompressed_stream = IO.popen(['gunzip', '-c', stream.path])
-        return import_stream(cloud, filename, uncompressed_stream, last_modified)
-      end
-      
       fields = parse_name(filename)
       if !fields
         puts "cloud=#{cloud.name} fn=import_stream filename=#{filename} at=skip"
