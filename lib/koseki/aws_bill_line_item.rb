@@ -67,15 +67,11 @@ module Koseki
           end
         end
       end
-       
-      puts column_values
         
       # Generate the actual query
       columns = column_values.keys
       values = column_values.values_at(*columns)
       query = "INSERT INTO aws_bill_line_items (#{columns.join(',')}) SELECT #{values.join(',')} FROM #{temp_table}"
-
-      puts query
       
       db.run query
       db.drop_table(temp_table)

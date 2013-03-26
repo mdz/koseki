@@ -92,7 +92,7 @@ module Koseki
 
     def replace_line_items(body)
       old_records = purge
-      new_records = Koseki::AWSBillLineItem.import_csv(self, StringIO.new(body))
+      new_records = Koseki::AWSBillLineItem.import_csv(self, body)
       return old_records, new_records
     end
   end
