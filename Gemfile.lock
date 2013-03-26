@@ -14,7 +14,7 @@ GIT
       ruby-hmac
 
 GEM
-  remote: http://rubygems.org/
+  remote: https://rubygems.org/
   specs:
     amazon-pricing (0.1.5)
     builder (3.1.4)
