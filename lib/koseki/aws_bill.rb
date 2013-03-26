@@ -5,7 +5,9 @@ require 'open-uri'
 module Koseki
   class AWSBill < Sequel::Model
     def self.import_s3_object(cloud, object)
+      # open-uri downloads the whole file, so check freshness first
       return if fresh?(cloud, object.key, object.last_modified)
+
       url = object.url(Time.now + 3600)
       import_stream(cloud, object.key, open(url), object.last_modified)
     end
@@ -13,7 +15,6 @@ module Koseki
     def self.import_file(cloud, path)
       filename = File.basename(path)
       stat = File.stat(path)
-      return if fresh?(cloud, filename, stat.mtime)
       import_stream(cloud, filename, open(path), stat.mtime)
     end
 
@@ -35,19 +36,12 @@ module Koseki
       return if fresh?(cloud, filename, last_modified)
 
       if filename.end_with? '.zip'
-        temp = Tempfile.open self.class.name
-        begin
-          IO.copy_stream(stream, temp)
-          temp.close
-          Zip::ZipFile.open(temp.path) do |zipfile|
-            for entry in zipfile.entries
-              import_stream(cloud, entry.name, entry.get_input_stream, entry.time)
-            end
-          end
-        ensure
-          temp.close!
-        end
-        return
+        # this assumes we can reopen the stream, but is roughly 25x faster than
+        # using Zip::ZipFile
+ 
+        filename = File.basename(filename, '.zip')
+        uncompressed_stream = IO.popen(['gunzip', '-c', stream.path])
+        return import_stream(cloud, filename, uncompressed_stream, last_modified)
       end
       
       fields = parse_name(filename)
