@@ -47,7 +47,7 @@ module Koseki
             ["'#{tag_name}'", "\"#{tag_column}\""]
           end.flatten.join(',')
 
-          column_values[column_name] = "hstore(ARRAY[#{tag_blob}]::text)"
+          column_values[column_name] = "hstore(ARRAY[#{tag_blob}]::text[])"
         else
           # Everything else maps 1:1 with the CSV, we just need to fix up the
           # names to match
