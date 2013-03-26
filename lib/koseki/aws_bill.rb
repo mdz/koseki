@@ -18,6 +18,9 @@ module Koseki
     end
 
     def self.fresh?(cloud, filename, last_modified)
+      if filename.end_with? '.zip'
+        filename = File.basename(filename, '.zip')
+      end
       bill = AWSBill.find(:cloud_id => cloud.id, :name => filename)
 
       current = bill ? bill.last_modified : nil
