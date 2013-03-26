@@ -161,9 +161,7 @@ class Controller
     cloud_name = args[0]
     path = args[1]
     cloud = Koseki::Cloud[:name => cloud_name]
-    file = File.open(path)
-    Koseki::AWSBill.import_file(cloud, File.basename(path), file, file.mtime)
-    file.close
+    Koseki::AWSBill.import_file(cloud, path)
   end
 
   def initdb

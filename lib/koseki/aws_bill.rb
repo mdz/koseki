@@ -1,15 +1,36 @@
 require 'koseki/aws_bill_line_item.rb'
 require 'zip'
+require 'open-uri'
 
 module Koseki
   class AWSBill < Sequel::Model
     def self.import_s3_object(cloud, object)
-      return if object.key.include? 'granular-line-items'
-      import_file(cloud, object.key, StringIO.new(object.body), object.last_modified)
+      return if fresh?(cloud, object.key, object.last_modified)
+      url = object.url(Time.now + 3600)
+      import_stream(cloud, object.key, open(url), object.last_modified)
     end
 
-    def self.import_file(cloud, filename, stream, last_modified)
-      puts "cloud=#{cloud.name} fn=import_file filename=#{filename} at=start"
+    def self.import_file(cloud, path)
+      filename = File.basename(path)
+      stat = File.stat(path)
+      return if fresh?(cloud, filename, stat.mtime)
+      import_stream(cloud, filename, open(path), stat.mtime)
+    end
+
+    def self.fresh?(cloud, filename, last_modified)
+      bill = AWSBill.find(:cloud_id => cloud.id, :name => filename)
+
+      current = bill ? bill.last_modified : nil
+      fresh = (current == last_modified)
+      puts "cloud=#{cloud.name} fn=fresh? filename=#{filename} at=fresh current=#{current} new=#{last_modified} fresh=#{fresh}"
+      return fresh
+    end
+
+    def self.import_stream(cloud, filename, stream, last_modified)
+      # stream must be seekable :-(
+      puts "cloud=#{cloud.name} fn=import_stream filename=#{filename} at=start"
+
+      return if fresh?(cloud, filename, last_modified)
 
       if filename.end_with? '.zip'
         temp = Tempfile.open self.class.name
@@ -18,7 +39,7 @@ module Koseki
           temp.close
           Zip::ZipFile.open(temp.path) do |zipfile|
             for entry in zipfile.entries
-              import_file(cloud, entry.name, entry.get_input_stream, entry.time)
+              import_stream(cloud, entry.name, entry.get_input_stream, entry.time)
             end
           end
         ensure
@@ -29,12 +50,11 @@ module Koseki
       
       fields = parse_name(filename)
       if !fields
-        puts "cloud=#{cloud.name} fn=import_file filename=#{filename} at=skip"
+        puts "cloud=#{cloud.name} fn=import_stream filename=#{filename} at=skip"
         return
       end
 
       db.transaction do
-        already_existed = true
         bill = AWSBill.find_or_create(:cloud_id => cloud.id, :name => filename) do |bill|
           bill.cloud_id = cloud.id
           bill.name = filename
@@ -44,18 +64,11 @@ module Koseki
               bill.send((key+'=').to_sym, value)
             end
           end
-          already_existed = false
-        end
-
-        if already_existed
-          fresh = (bill.last_modified == last_modified)
-          puts "cloud=#{cloud.name} fn=import_file filename=#{filename} at=fresh current=#{bill.last_modified} new=#{last_modified} fresh=#{fresh}"
-          return if fresh
         end
 
         old_records, new_records = bill.import_data(fields['format'], stream)
         bill.update(:last_modified => last_modified)
-        puts "cloud=#{cloud.name} fn=import_file at=finish new_records=#{new_records} old_records=#{old_records}"
+        puts "cloud=#{cloud.name} fn=import_stream at=finish new_records=#{new_records} old_records=#{old_records}"
       end
 
     end
