@@ -408,7 +408,8 @@ with costs as (
     case
       when billing_period_end_date > last_modified then 'month to date'
       else 'full month'
-    end::text as month_type
+    end::text as month_type,
+    365.0/12/extract(days from billing_period_start_date+'1 month'::interval-'1 day'::interval) normalization_factor
 
   from aws_bills
     inner join aws_bill_line_items on (aws_bill_id = aws_bills.id)
@@ -433,11 +434,19 @@ forecast as (
     billing_period_start_date,
     partial_billing_period,
     month,
-    'full month forecast'::text as month_type
+    'full month forecast'::text as month_type,
+    normalization_factor
   from costs
   where month_type = 'month to date'
+),
+combined as (
+  select * from costs union select * from forecast
 )
-select * from costs union select * from forecast;
+
+select *,
+  usage_quantity*normalization_factor as normalized_usage_quantity,
+  total_cost*normalization_factor as normalized_total_cost
+from combined;
 ")
 
   end
