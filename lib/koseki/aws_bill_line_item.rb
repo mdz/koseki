@@ -63,8 +63,8 @@ module Koseki
           end
 
           if csv_fields.include? csv_field
-            #column_values[column_name] = "nullif(\"#{csv_field}\",'')::#{db_type}"
-            column_values[column_name] = "\"#{csv_field}\"::#{db_type}"
+            column_values[column_name] = "nullif(\"#{csv_field}\",'')::#{db_type}"
+            #column_values[column_name] = "\"#{csv_field}\"::#{db_type}"
           else
             # Skip fields which are in our schema but not in the CSV (just leave them null)
           end
