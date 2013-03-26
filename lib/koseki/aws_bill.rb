@@ -5,7 +5,7 @@ module Koseki
   class AWSBill < Sequel::Model
     def self.import_s3_object(cloud, object)
       return if object.key.include? 'granular-line-items'
-      import_file(cloud, object.key, object.body, object.last_modified)
+      import_file(cloud, object.key, StringIO.new(object.body), object.last_modified)
     end
 
     def self.import_file(cloud, filename, contents, last_modified)
