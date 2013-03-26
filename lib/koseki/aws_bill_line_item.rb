@@ -78,7 +78,7 @@ module Koseki
       db.drop_table(temp_table)
 
       elapsed = Time.now-start_time
-      puts "fn=import_csv at=finish elapsed=#{elapsed.round} new_records=#{new_records} records_per_second=#{new_records/elapsed}"
+      puts "fn=import_csv at=finish elapsed=#{elapsed.round} new_records=#{new_records} records_per_second=#{(new_records/elapsed).round}"
       return new_records
     end
 
