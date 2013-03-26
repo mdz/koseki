@@ -78,7 +78,7 @@ module Koseki
       puts query
       
       db.run query
-      db.drop_table[temp_table]
+      db.drop_table(temp_table)
       return
 
       new_records = 0 # XXX
