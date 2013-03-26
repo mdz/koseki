@@ -8,13 +8,13 @@ module Koseki
       import_file(cloud, object.key, StringIO.new(object.body), object.last_modified)
     end
 
-    def self.import_file(cloud, filename, contents, last_modified)
+    def self.import_file(cloud, filename, stream, last_modified)
       puts "cloud=#{cloud.name} fn=import_file filename=#{filename} at=start"
 
       if filename.end_with? '.zip'
         temp = Tempfile.open self.class.name
         begin
-          temp.write(contents)
+          IO.copy_stream(stream, temp)
           temp.close
           Zip::ZipFile.open(temp.path) do |zipfile|
             for entry in zipfile.entries
@@ -53,7 +53,7 @@ module Koseki
           return if fresh
         end
 
-        old_records, new_records = bill.import_data(fields['format'], contents)
+        old_records, new_records = bill.import_data(fields['format'], stream)
         bill.update(:last_modified => last_modified)
         puts "cloud=#{cloud.name} fn=import_file at=finish new_records=#{new_records} old_records=#{old_records}"
       end
