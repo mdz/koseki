@@ -78,9 +78,6 @@ module Koseki
       puts query
       
       db.run query
-
-      # save a copy for debugging purposes
-      db.run "create table csv_import_save as select * from #{temp_table}"
       db.drop_table[temp_table]
       return
 
