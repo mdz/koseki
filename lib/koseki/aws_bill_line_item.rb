@@ -29,7 +29,9 @@ module Koseki
         :data => data,
         :format => :csv,
       }
+      elapsed = Time.now-start_time
       new_records = db[temp_table].count
+      puts "fn=import_csv at=copied elapsed=#{elapsed.round} new_records=#{new_records} records_per_second=#{(new_records/elapsed).round}"
 
       # Generate a mapping of column names to SQL expressions which will do the conversions
       column_values = Hash.new
