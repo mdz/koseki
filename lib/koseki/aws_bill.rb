@@ -83,10 +83,10 @@ module Koseki
       return fields
     end
 
-    def import_data(format, body)
+    def import_data(format, stream)
       if format == 'csv'
         if type == 'billing-csv' or type == 'cost-allocation' or type == 'billing-detailed-line-items'
-          return replace_line_items(body)
+          return replace_line_items(stream)
         else
           raise "Unknown bill type: #{type}"
         end
@@ -103,9 +103,9 @@ module Koseki
     end
 
 
-    def replace_line_items(body)
+    def replace_line_items(stream)
       old_records = purge
-      new_records = Koseki::AWSBillLineItem.import_csv(self, body)
+      new_records = Koseki::AWSBillLineItem.import_csv(self, stream)
       return old_records, new_records
     end
   end
