@@ -27,7 +27,6 @@ module Koseki
     end
 
     def self.import_stream(cloud, filename, stream, last_modified)
-      # stream must be seekable :-(
       puts "cloud=#{cloud.name} fn=import_stream filename=#{filename} at=start"
 
       return if fresh?(cloud, filename, last_modified)
