@@ -16,9 +16,9 @@ module Koseki
         # contain any shell escapes
 
         filename = File.basename(object.key, '.zip')
-        stream = IO.popen("curl -s '#{url}' | gunzip")
+        stream = IO.popen("curl -s -f '#{url}' | gunzip")
       else
-        stream = IO.popen(['curl', '-s', url])
+        stream = IO.popen(['curl', '-s', '-f', url])
       end
 
       import_stream(cloud, filename, stream, last_modified)
@@ -64,7 +64,9 @@ module Koseki
           bill.cloud_id = cloud.id
           bill.name = filename
           bill.last_modified = last_modified
-          parse_name(filename).each do |key, value|
+
+          # pull in data derived from the filename
+          fields.each do |key, value|
             if bill.respond_to? key
               bill.send((key+'=').to_sym, value)
             end
