@@ -19,7 +19,7 @@ module Koseki
         elapsed = now - @start_time
         @offset += chunk.length
 
-        if not @last_logged_at and (now - @last_logged_at) > @log_interval
+        if not @last_logged_at or (now - @last_logged_at) > @log_interval
           puts "fn=LoggingStream.each at=before_yield offset=#{@offset} elapsed=#{elapsed} bytes_per_second=#{(@offset/elapsed).round} chunk=#{chunk}"
           @last_logged_at = now
         else
