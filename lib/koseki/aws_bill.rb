@@ -22,6 +22,7 @@ module Koseki
       end
 
       import_stream(cloud, filename, stream, last_modified)
+      stream.close
     end
 
     def self.import_file(cloud, path)
@@ -36,6 +37,7 @@ module Koseki
         stream = open(path)
       end
       import_stream(cloud, filename, stream, last_modified)
+      stream.close
     end
 
     def self.fresh?(cloud, filename, last_modified)
