@@ -16,7 +16,7 @@ module Koseki
         # contain any shell escapes
 
         filename = File.basename(object.key, '.zip')
-        stream = IO.popen("curl -s -f '#{url}' | gunzip")
+        stream = IO.popen("curl -s -f '#{url}' </dev/null | gunzip")
       else
         stream = IO.popen(['curl', '-s', '-f', url])
       end
