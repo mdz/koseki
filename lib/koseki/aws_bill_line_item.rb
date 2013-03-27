@@ -1,4 +1,33 @@
 module Koseki
+  class LoggingStream
+    # Simple wrapper to log progress of the CSV import
+    def initialize(io)
+      @io = io
+      @offset = 0
+      @last_logged_at = nil
+      @start_time = nil
+      @log_interval = 1 
+    end
+
+    def each
+      @io.each do |chunk|
+        if not @start_time
+          @start_time = Time.now
+        end
+
+        now = Time.now
+        elapsed = now - @start_time
+        @offset += chunk.length
+
+        if not @last_logged_at or (now - @last_logged_at) > @log_interval
+          puts "fn=LoggingStream.each offset=#{@offset} elapsed=#{elapsed} bytes_per_second=#{(@offset/elapsed).round}"
+          @last_logged_at = now
+        end
+        yield chunk
+      end
+    end
+  end
+
   class AWSBillLineItem < Sequel::Model
     def self.import_csv(bill, data)
       puts "fn=import_csv at=start"
@@ -26,7 +55,7 @@ module Koseki
       # Import the whole raw CSV into it (fast!)
       db.copy_into temp_table, {
         :columns => temp_table_columns,
-        :data => data,
+        :data => LoggingStream.new(data),
         :format => :csv,
       }
       elapsed = Time.now-start_time
