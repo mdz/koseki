@@ -16,14 +16,9 @@ GIT
 GEM
   remote: https://rubygems.org/
   specs:
-    activesupport (3.2.13)
-      i18n (= 0.6.1)
-      multi_json (~> 1.0)
     amazon-pricing (0.1.5)
     builder (3.1.4)
     excon (0.16.7)
-    filter_io (0.1.6)
-      activesupport
     formatador (0.2.4)
     i18n (0.6.1)
     lock-smith (0.0.9)
@@ -61,7 +56,6 @@ PLATFORMS
 
 DEPENDENCIES
   amazon-pricing
-  filter_io
   fog!
   lock-smith
   mail
