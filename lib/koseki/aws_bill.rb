@@ -16,9 +16,10 @@ module Koseki
         # contain any shell escapes
 
         filename = File.basename(object.key, '.zip')
-        stream = IO.popen("curl -s -f '#{url}' </dev/null | gunzip")
+        stream = IO.popen("curl -s -f '#{url}' | gunzip", "r",
+                          {:in => :close})
       else
-        stream = IO.popen(['curl', '-s', '-f', url])
+        stream = IO.popen(['curl', '-s', '-f', url], "r", {:in => :close})
       end
 
       import_stream(cloud, filename, stream, last_modified)
@@ -32,7 +33,7 @@ module Koseki
 
       if filename.end_with? '.zip'
         filename = File.basename(filename, '.zip')
-        stream = IO.popen(['gunzip', '-c', path])
+        stream = IO.popen(['gunzip', '-c', path], "r", {:in => :close})
       else
         stream = open(path)
       end
