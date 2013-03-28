@@ -389,7 +389,12 @@ with costs as (
   select linked_account_name as account_name,
     '#'||coalesce(nullif(linked_account_id,''),payer_account_id) as account_number,
     coalesce(tags->'cloud',clouds.name, 'account #'||linked_account_id) as cloud,
-    coalesce(tags->'slot', coalesce(tags->'cloud', clouds.name, 'account #'||linked_account_id)||' untagged resources') as slot,
+    coalesce(tags->'slot',
+      case
+        when usage_type like '%LoadBalancerUsage' then coalesce(tags->'cloud', clouds.name, 'account #'||linked_account_id)||' ELB usage'
+        when product_code = 'AWSDataTransfer' then coalesce(tags->'cloud', clouds.name, 'account #'||linked_account_id)||' untagged data transfer'
+        else coalesce(tags->'cloud', clouds.name, 'account #'||linked_account_id)||' untagged resources'
+      end) as slot,
     case
       when item_description like 'Sign up charge for subscription%' then 'reserved instance purchase'
       when credits <> 0 then 'credit'
