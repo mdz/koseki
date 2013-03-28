@@ -1,5 +1,7 @@
 require 'koseki/aws_bill_line_item.rb'
 require 'zip'
+require 'tmpdir'
+require 'open-uri'
 
 module Koseki
   class AWSBill < Sequel::Model
@@ -8,21 +10,16 @@ module Koseki
       filename = object.key
       return unless should_import?(cloud, filename, last_modified)
 
-      url = object.url(Time.now + 3600)
-      if object.key.end_with? '.zip'
-        # Holy /bin/sh!  I could not find a way to implement streaming
-        # processing in Ruby, At least url comes from fog and should not
-        # contain any shell escapes
-
-        filename = File.basename(object.key, '.zip')
-        stream = IO.popen("curl -s -f -Y 10000 --retry 2 '#{url}' | gunzip", "r",
-                          {:in => :close})
-      else
-        stream = IO.popen(['curl', '-s', '-f', '-Y', '10000', '--retry', '2', url], "r", {:in => :close})
+      Dir.mktmpdir do |tmpdir|
+        path = File.join(tmpdir, object.key)
+        tmpfile = open(path, 'w')
+        input = open(object.url(Time.now + 3600))
+        IO.copy_stream(input, tmpfile)
+        tmpfile.close
+        input.close
+        File.utime(last_modified, last_modified, path)
+        import_file(cloud, path)
       end
-
-      import_stream(cloud, filename, stream, last_modified)
-      stream.close
     end
 
     def self.import_file(cloud, path)
