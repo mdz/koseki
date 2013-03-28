@@ -6,8 +6,7 @@ module Koseki
     def self.import_s3_object(cloud, object)
       last_modified = object.last_modified
       filename = object.key
-      # don't bother fetching if we already know we're up to date
-      return if fresh?(cloud, filename, last_modified)
+      return unless should_import?(cloud, filename, last_modified)
 
       url = object.url(Time.now + 3600)
       if object.key.end_with? '.zip'
@@ -16,10 +15,10 @@ module Koseki
         # contain any shell escapes
 
         filename = File.basename(object.key, '.zip')
-        stream = IO.popen("curl -s -f '#{url}' | gunzip", "r",
+        stream = IO.popen("curl -s -f -Y '#{url}' | gunzip", "r",
                           {:in => :close})
       else
-        stream = IO.popen(['curl', '-s', '-f', url], "r", {:in => :close})
+        stream = IO.popen(['curl', '-s', '-f', '-Y', url], "r", {:in => :close})
       end
 
       import_stream(cloud, filename, stream, last_modified)
@@ -29,7 +28,7 @@ module Koseki
     def self.import_file(cloud, path)
       filename = File.basename(path)
       last_modified = File.stat(path).mtime
-      return if fresh?(cloud, filename, last_modified)
+      return unless should_import?(cloud, filename, last_modified)
 
       if filename.end_with? '.zip'
         filename = File.basename(filename, '.zip')
@@ -41,26 +40,44 @@ module Koseki
       stream.close
     end
 
-    def self.fresh?(cloud, filename, last_modified)
+    def self.should_import?(cloud, filename, last_modified)
       if filename.end_with? '.zip'
         filename = File.basename(filename, '.zip')
       end
+
+      fields = parse_name(filename)
+      if not fields
+        puts "cloud=#{cloud.name} fn=should_import? filename=#{filename} format=#{format} type=#{type} at=unrecognized_filename"
+      end
+      format = fields['format']
+      type = fields['type']
+
+      case type
+      when 'billing-csv', 'cost-allocation', 'billing-detailed-line-items'
+        # OK
+      else
+        puts "cloud=#{cloud.name} fn=should_import? filename=#{filename} format=#{format} type=#{type} at=unknown_bill_type"
+        return true
+      end
+
+      case format
+      when 'csv'
+        # OK
+      else
+        puts "cloud=#{cloud.name} fn=should_import? filename=#{filename} format=#{format} type=#{type} at=unknown_file_format"
+        return true
+      end
+
       bill = AWSBill.find(:cloud_id => cloud.id, :name => filename)
 
       current = bill ? bill.last_modified : nil
       fresh = (current == last_modified)
-      puts "cloud=#{cloud.name} fn=fresh? filename=#{filename} at=fresh current=#{current} new=#{last_modified} fresh=#{fresh}"
-      return fresh
+      puts "cloud=#{cloud.name} fn=should_import? filename=#{filename} at=finish current=#{current} new=#{last_modified} fresh=#{fresh}"
+      return !fresh
     end
 
     def self.import_stream(cloud, filename, stream, last_modified)
       puts "cloud=#{cloud.name} fn=import_stream filename=#{filename} at=start"
-
-      fields = parse_name(filename)
-      if !fields
-        puts "cloud=#{cloud.name} fn=import_stream filename=#{filename} at=skip"
-        return
-      end
 
       db.transaction do
         bill = AWSBill.find_or_create(:cloud_id => cloud.id, :name => filename) do |bill|
@@ -69,14 +86,14 @@ module Koseki
           bill.last_modified = last_modified
 
           # pull in data derived from the filename
-          fields.each do |key, value|
+          parse_name(filename).each do |key, value|
             if bill.respond_to? key
               bill.send((key+'=').to_sym, value)
             end
           end
         end
 
-        old_records, new_records = bill.import_data(fields['format'], stream)
+        old_records, new_records = bill.replace_line_items(stream)
         bill.update(:last_modified => last_modified)
         puts "cloud=#{cloud.name} fn=import_stream at=finish new_records=#{new_records} old_records=#{old_records}"
       end
@@ -91,18 +108,6 @@ module Koseki
       fields = Hash[match.names.zip(match.captures)]
       fields['month_start'] = Time.mktime(fields['year'].to_i, fields['month'].to_i)
       return fields
-    end
-
-    def import_data(format, stream)
-      if format == 'csv'
-        if type == 'billing-csv' or type == 'cost-allocation' or type == 'billing-detailed-line-items'
-          return replace_line_items(stream)
-        else
-          raise "Unknown bill type: #{type}"
-        end
-      else
-        raise "Unknown data format: #{format}"
-      end
     end
 
     def purge
