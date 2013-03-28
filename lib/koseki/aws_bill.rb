@@ -48,6 +48,7 @@ module Koseki
       fields = parse_name(filename)
       if not fields
         puts "cloud=#{cloud.name} fn=should_import? filename=#{filename} at=unrecognized_filename"
+        return false
       end
       format = fields['format']
       type = fields['type']
