@@ -174,6 +174,7 @@ class Controller
       String :secret_access_key, :null => false
       String :programmatic_billing_bucket
       DateTime :updated_at
+      HStore :tags
     end
 
     @db.create_table :availability_zones do
@@ -391,7 +392,7 @@ with costs as (
     coalesce(tags->'cloud',clouds.name, 'account #'||linked_account_id) as cloud,
     coalesce(tags->'slot',
       case
-        when usage_type like '%LoadBalancerUsage' then coalesce(tags->'cloud', clouds.name, 'account #'||linked_account_id)||' ELB usage'
+        when operation = 'LoadBalancing' then coalesce(tags->'cloud', clouds.name, 'account #'||linked_account_id)||' ELB usage'
         when product_code = 'AWSDataTransfer' then coalesce(tags->'cloud', clouds.name, 'account #'||linked_account_id)||' untagged data transfer'
         else coalesce(tags->'cloud', clouds.name, 'account #'||linked_account_id)||' untagged resources'
       end) as slot,
