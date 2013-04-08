@@ -51,7 +51,7 @@ module Koseki
       type = fields['type']
 
       case type
-      when 'billing-csv', 'cost-allocation', 'billing-detailed-line-items'
+      when 'billing-csv', 'cost-allocation', 'billing-detailed-line-items', 'detailed-line-items-with-resources-and-tags'
         # OK
       else
         puts "cloud=#{cloud.name} fn=should_import? filename=#{filename} format=#{format} type=#{type} at=unknown_bill_type"
