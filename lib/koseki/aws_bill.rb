@@ -1,61 +1,99 @@
 require 'koseki/aws_bill_line_item.rb'
 require 'zip'
+require 'tmpdir'
+require 'open-uri'
 
 module Koseki
   class AWSBill < Sequel::Model
     def self.import_s3_object(cloud, object)
-      puts "cloud=#{cloud.name} fn=import_s3_object object=#{object.key} at=start"
-      import_file(cloud, object.key, object.body, object.last_modified)
+      last_modified = object.last_modified
+      filename = object.key
+      return unless should_import?(cloud, filename, last_modified)
+
+      Dir.mktmpdir do |tmpdir|
+        path = File.join(tmpdir, object.key)
+        tmpfile = open(path, 'w')
+        input = open(object.url(Time.now + 3600))
+        IO.copy_stream(input, tmpfile)
+        tmpfile.close
+        input.close
+        File.utime(last_modified, last_modified, path)
+        import_file(cloud, path)
+      end
     end
 
-    def self.import_file(cloud, filename, contents, last_modified)
-      puts "cloud=#{cloud.name} fn=import_file filename=#{filename} at=start"
+    def self.import_file(cloud, path)
+      filename = File.basename(path)
+      last_modified = File.stat(path).mtime
+      return unless should_import?(cloud, filename, last_modified)
 
       if filename.end_with? '.zip'
-        temp = Tempfile.open self.class.name
-        begin
-          temp.write(contents)
-          temp.close
-          Zip::ZipFile.open(temp.path) do |zipfile|
-            for entry in zipfile.entries
-              import_file(cloud, entry.name, entry.get_input_stream, entry.time)
-            end
-          end
-        ensure
-          temp.close!
-        end
-        return
+        filename = File.basename(filename, '.zip')
+        stream = IO.popen(['gunzip', '-c', path], "r", {:in => :close})
+      else
+        stream = open(path)
       end
-      
-      fields = parse_name(filename)
-      if !fields
-        puts "cloud=#{cloud.name} fn=import_file filename=#{filename} at=skip"
-        return
+      import_stream(cloud, filename, stream, last_modified)
+      stream.close
+    end
+
+    def self.should_import?(cloud, filename, last_modified)
+      if filename.end_with? '.zip'
+        filename = File.basename(filename, '.zip')
       end
 
+      fields = parse_name(filename)
+      if not fields
+        puts "cloud=#{cloud.name} fn=should_import? filename=#{filename} at=unrecognized_filename"
+        return false
+      end
+      format = fields['format']
+      type = fields['type']
+
+      case type
+      when 'billing-csv', 'cost-allocation', 'billing-detailed-line-items'
+        # OK
+      else
+        puts "cloud=#{cloud.name} fn=should_import? filename=#{filename} format=#{format} type=#{type} at=unknown_bill_type"
+        return false
+      end
+
+      case format
+      when 'csv'
+        # OK
+      else
+        puts "cloud=#{cloud.name} fn=should_import? filename=#{filename} format=#{format} type=#{type} at=unknown_file_format"
+        return false
+      end
+
+      bill = AWSBill.find(:cloud_id => cloud.id, :name => filename)
+
+      current = bill ? bill.last_modified : nil
+      fresh = (current == last_modified)
+      puts "cloud=#{cloud.name} fn=should_import? filename=#{filename} at=finish current=#{current} new=#{last_modified} fresh=#{fresh}"
+      return !fresh
+    end
+
+    def self.import_stream(cloud, filename, stream, last_modified)
+      puts "cloud=#{cloud.name} fn=import_stream filename=#{filename} at=start"
+
       db.transaction do
-        already_existed = true
         bill = AWSBill.find_or_create(:cloud_id => cloud.id, :name => filename) do |bill|
           bill.cloud_id = cloud.id
           bill.name = filename
           bill.last_modified = last_modified
+
+          # pull in data derived from the filename
           parse_name(filename).each do |key, value|
             if bill.respond_to? key
               bill.send((key+'=').to_sym, value)
             end
           end
-          already_existed = false
         end
 
-        if already_existed
-          fresh = (bill.last_modified == last_modified)
-          puts "cloud=#{cloud.name} fn=import_file filename=#{filename} at=fresh current=#{bill.last_modified} new=#{last_modified} fresh=#{fresh}"
-          return if fresh
-        end
-
-        old_records, new_records = bill.import_data(fields['format'], contents)
+        old_records, new_records = bill.replace_line_items(stream)
         bill.update(:last_modified => last_modified)
-        puts "cloud=#{cloud.name} fn=import_file at=finish new_records=#{new_records} old_records=#{old_records}"
+        puts "cloud=#{cloud.name} fn=import_stream at=finish new_records=#{new_records} old_records=#{old_records}"
       end
 
     end
@@ -70,18 +108,6 @@ module Koseki
       return fields
     end
 
-    def import_data(format, body)
-      if format == 'csv'
-        if type == 'billing-csv' or type == 'cost-allocation' or type == 'billing-detailed-line-items' or type == 'granular-line-items'
-          return replace_line_items(body)
-        else
-          raise "Unknown bill type: #{type}"
-        end
-      else
-        raise "Unknown data format: #{format}"
-      end
-    end
-
     def purge
       records = Koseki::AWSBillLineItem.where(:aws_bill_id => id)
       record_count = records.count
@@ -90,9 +116,9 @@ module Koseki
     end
 
 
-    def replace_line_items(body)
+    def replace_line_items(stream)
       old_records = purge
-      new_records = Koseki::AWSBillLineItem.import_csv(self, body)
+      new_records = Koseki::AWSBillLineItem.import_csv(self, stream)
       return old_records, new_records
     end
   end

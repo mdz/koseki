@@ -161,9 +161,7 @@ class Controller
     cloud_name = args[0]
     path = args[1]
     cloud = Koseki::Cloud[:name => cloud_name]
-    file = File.open(path)
-    Koseki::AWSBill.import_file(cloud, File.basename(path), file.read, file.mtime)
-    file.close
+    Koseki::AWSBill.import_file(cloud, path)
   end
 
   def initdb
@@ -176,6 +174,7 @@ class Controller
       String :secret_access_key, :null => false
       String :programmatic_billing_bucket
       DateTime :updated_at
+      HStore :tags
     end
 
     @db.create_table :availability_zones do
@@ -394,7 +393,12 @@ with costs as (
   select linked_account_name as account_name,
     '#'||coalesce(nullif(linked_account_id,''),payer_account_id) as account_number,
     coalesce(tags->'cloud',clouds.name, 'account #'||linked_account_id) as cloud,
-    coalesce(tags->'slot', coalesce(tags->'cloud', clouds.name, 'account #'||linked_account_id)||' untagged resources') as slot,
+    coalesce(tags->'slot',
+      case
+        when operation = 'LoadBalancing' then coalesce(tags->'cloud', clouds.name, 'account #'||linked_account_id)||' ELB usage'
+        when product_code = 'AWSDataTransfer' then coalesce(tags->'cloud', clouds.name, 'account #'||linked_account_id)||' untagged data transfer'
+        else coalesce(tags->'cloud', clouds.name, 'account #'||linked_account_id)||' untagged resources'
+      end) as slot,
     case
       when item_description like 'Sign up charge for subscription%' then 'reserved instance purchase'
       when credits <> 0 then 'credit'
@@ -413,7 +417,8 @@ with costs as (
     case
       when billing_period_end_date > last_modified then 'month to date'
       else 'full month'
-    end::text as month_type
+    end::text as month_type,
+    365.0/12/extract(days from billing_period_start_date+'1 month'::interval-'1 day'::interval) normalization_factor
 
   from aws_bills
     inner join aws_bill_line_items on (aws_bill_id = aws_bills.id)
@@ -438,11 +443,19 @@ forecast as (
     billing_period_start_date,
     partial_billing_period,
     month,
-    'full month forecast'::text as month_type
+    'full month forecast'::text as month_type,
+    normalization_factor
   from costs
   where month_type = 'month to date'
+),
+combined as (
+  select * from costs union select * from forecast
 )
-select * from costs union select * from forecast;
+
+select *,
+  usage_quantity*normalization_factor as normalized_usage_quantity,
+  total_cost*normalization_factor as normalized_total_cost
+from combined;
 ")
 
   end
