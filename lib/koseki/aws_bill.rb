@@ -55,7 +55,7 @@ module Koseki
         # OK
       else
         puts "cloud=#{cloud.name} fn=should_import? filename=#{filename} format=#{format} type=#{type} at=unknown_bill_type"
-        return true
+        return false
       end
 
       case format
@@ -63,7 +63,7 @@ module Koseki
         # OK
       else
         puts "cloud=#{cloud.name} fn=should_import? filename=#{filename} format=#{format} type=#{type} at=unknown_file_format"
-        return true
+        return false
       end
 
       bill = AWSBill.find(:cloud_id => cloud.id, :name => filename)
