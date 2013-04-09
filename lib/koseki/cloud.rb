@@ -233,6 +233,10 @@ module Koseki
         new = 0
         now = Time.now
         for ri in @compute.describe_reserved_instances.body["reservedInstancesSet"]
+          if ri["reservedInstancesId"] == nil
+            puts "cloud=#{@cloud.name} region=#{name} fn=refresh_reserved_instances at=weird_ri id=#{ri["reservedInstancesId"]} logical_az=#{ri["availabilityZone"]} instance_type=#{ri["instanceType"]} offering_type=#{ri["offeringType"]} instance_count=#{ri["instanceCount"]}"
+            next
+          end
           r = Reservation.find_or_create(:id => ri["reservedInstancesId"]) do |r|
             r.id = ri["reservedInstancesId"]
             r.cloud_id = @cloud.id
