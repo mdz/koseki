@@ -42,7 +42,7 @@ module Koseki
         filename = File.basename(filename, '.zip')
       end
 
-      if filename == 'aws-programmatic-billing-drop-zone/098166147350-aws-billing-detailed-line-items-with-resources-and-tags-2013-03.csv.zip'
+      if filename == '098166147350-aws-billing-detailed-line-items-with-resources-and-tags-2013-03.csv.zip'
         # malformed
         puts "cloud=#{cloud.name} fn=should_import? filename=#{filename} at=hardcoded_skip"
         return false
