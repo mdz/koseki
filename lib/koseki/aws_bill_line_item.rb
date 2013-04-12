@@ -116,5 +116,12 @@ module Koseki
       return new_records
     end
 
+    def self.delete_all(id)
+      records = self.where(:aws_bill_id => id)
+      record_count = records.count
+      records.delete
+      return record_count
+    end
+
   end
 end

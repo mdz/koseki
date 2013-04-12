@@ -108,16 +108,8 @@ module Koseki
       return fields
     end
 
-    def purge
-      records = Koseki::AWSBillLineItem.where(:aws_bill_id => id)
-      record_count = records.count
-      records.delete
-      return record_count
-    end
-
-
     def replace_line_items(stream)
-      old_records = purge
+      old_records = Koseki::AWSBillLineItem.delete_all(id)
       new_records = Koseki::AWSBillLineItem.import_csv(self, stream)
       return old_records, new_records
     end
