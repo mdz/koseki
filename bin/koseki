@@ -74,6 +74,14 @@ class Controller
     puts "fn=poll_cloud cloud=#{cloud.name} at=finish"
   end
 
+  def refresh_bills
+    puts "fn=refresh_bills at=start"
+    for cloud in Koseki::Cloud.where(Sequel.negate(:programmatic_billing_bucket => nil))
+      cloud.refresh_programmatic_billing
+    end
+    puts "fn=refresh_bills at=finish"
+  end
+
   def poll_forever
     puts "fn=poll_forever at=start"
     loops = 0
@@ -469,6 +477,8 @@ when 'poll-forever'
   Controller.new.poll_forever
 when 'get-prices'
   Controller.new.import_pricelist
+when 'refresh-bills'
+  Controller.new.refresh_bills
 when 'init-db'
   Controller.new.initdb
 when 'migrate-db'
