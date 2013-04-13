@@ -326,7 +326,7 @@ class Controller
       String :availability_zone
       HStore :tags # used to store all user tags
 
-      # only in detail report
+      # only in detail report and resource level report
       # InvoiceID,PayerAccountId,LinkedAccountId,RecordType,ProductName,RateId,SubscriptionId,PricingPlanId,UsageType,Operation,AvailabilityZone,ReservedInstance,ItemDescription,UsageStartDate,UsageEndDate,UsageQuantity,BlendedRate,BlendedCost,UnBlendedRate,UnBlendedCost
       String :subscription_id
       String :pricing_plan_id
@@ -334,6 +334,9 @@ class Controller
       BigDecimal :blended_cost
       BigDecimal :un_blended_rate
       BigDecimal :un_blended_cost
+
+      # only in resource level report
+      String :resource_id
     end
 
   @db.create_view(:running_instance_costs, "

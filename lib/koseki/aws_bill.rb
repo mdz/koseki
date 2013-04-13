@@ -42,6 +42,12 @@ module Koseki
         filename = File.basename(filename, '.zip')
       end
 
+      if filename == '098166147350-aws-billing-detailed-line-items-with-resources-and-tags-2013-03.csv'
+        # malformed
+        puts "cloud=#{cloud.name} fn=should_import? filename=#{filename} at=hardcoded_skip"
+        return false
+      end
+
       fields = parse_name(filename)
       if not fields
         puts "cloud=#{cloud.name} fn=should_import? filename=#{filename} at=unrecognized_filename"
@@ -51,7 +57,7 @@ module Koseki
       type = fields['type']
 
       case type
-      when 'billing-csv', 'cost-allocation', 'billing-detailed-line-items'
+      when 'billing-csv', 'cost-allocation', 'billing-detailed-line-items', 'billing-detailed-line-items-with-resources-and-tags'
         # OK
       else
         puts "cloud=#{cloud.name} fn=should_import? filename=#{filename} format=#{format} type=#{type} at=unknown_bill_type"
@@ -108,16 +114,8 @@ module Koseki
       return fields
     end
 
-    def purge
-      records = Koseki::AWSBillLineItem.where(:aws_bill_id => id)
-      record_count = records.count
-      records.delete
-      return record_count
-    end
-
-
     def replace_line_items(stream)
-      old_records = purge
+      old_records = Koseki::AWSBillLineItem.delete_all(id)
       new_records = Koseki::AWSBillLineItem.import_csv(self, stream)
       return old_records, new_records
     end
