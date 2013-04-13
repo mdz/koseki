@@ -6,11 +6,10 @@ require 'locksmith/pg'
 module Koseki
   class Cloud < Sequel::Model
 
-    def refresh_all
+    def refresh_resources
       puts "cloud=#{name} at=start"
       update(:updated_at => Time.now)
 
-      refresh_programmatic_billing
       for region in regions
         region.refresh_all
       end

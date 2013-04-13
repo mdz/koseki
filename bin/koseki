@@ -64,7 +64,7 @@ class Controller
     end
 
     begin
-      cloud.refresh_all
+      cloud.refresh_resources
     rescue Fog::Compute::AWS::Error => err
       puts "fn=poll_cloud cloud=#{cloud.name} at=failed aws_error=#{err}"
     ensure
