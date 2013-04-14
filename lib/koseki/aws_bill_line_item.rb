@@ -87,9 +87,11 @@ module Koseki
           # Everything else maps 1:1 with the CSV, we just need to fix up the
           # names to match
 
+          # inconsistent capitalization rules :-(
           if column_name == :invoice_id
-            # inconsistent capitalization rules :-(
             csv_field = 'InvoiceID'
+          elsif column_name == :record_id
+            csv_field = 'RecordID'
           else
             csv_field = column_name.to_s.split('_').map(&:capitalize).join
           end
