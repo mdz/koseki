@@ -389,12 +389,12 @@ WHERE instances > 0;
 with costs as (
   select linked_account_name as account_name,
     '#'||coalesce(nullif(linked_account_id,''),payer_account_id) as account_number,
-    coalesce(tags->'cloud',clouds.name, 'account #'||linked_account_id) as cloud,
-    coalesce(tags->'slot',
+    coalesce(aws_bill_line_items.tags->'cloud',clouds.name, 'account #'||linked_account_id) as cloud,
+    coalesce(aws_bill_line_items.tags->'slot',
       case
-        when operation = 'LoadBalancing' then coalesce(tags->'cloud', clouds.name, 'account #'||linked_account_id)||' untagged ELB usage'
-        when product_code = 'AWSDataTransfer' then coalesce(tags->'cloud', clouds.name, 'account #'||linked_account_id)||' untagged data transfer'
-        else coalesce(tags->'cloud', clouds.name, 'account #'||linked_account_id)||' untagged resources'
+        when operation = 'LoadBalancing' then coalesce(aws_bill_line_items.tags->'cloud', clouds.name, 'account #'||linked_account_id)||' untagged ELB usage'
+        when product_code = 'AWSDataTransfer' then coalesce(aws_bill_line_items.tags->'cloud', clouds.name, 'account #'||linked_account_id)||' untagged data transfer'
+        else coalesce(aws_bill_line_items.tags->'cloud', clouds.name, 'account #'||linked_account_id)||' untagged resources'
       end) as slot,
     case
       when item_description like 'Sign up charge for subscription%' then 'reserved instance purchase'
