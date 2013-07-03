@@ -45,7 +45,8 @@ module Koseki
         cloud.secret_access_key = credentials[:secret_access_key]
       end
 
-      # update the credentials if it already existed
+      # update the credentials and name if it already existed
+      cloud.name = params['name']
       cloud.access_key_id = credentials[:access_key_id]
       cloud.secret_access_key = credentials[:secret_access_key]
       cloud.save
