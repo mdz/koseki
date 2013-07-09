@@ -164,6 +164,57 @@ class Controller
     Koseki::AWSBill.import_file(cloud, path)
   end
 
+  def refresh_instance_usage_summary
+    @db.run """
+drop table if exists instance_usage_summary_previous_month;
+create table instance_usage_summary_previous_month as
+with
+range as (
+  select
+    date_trunc('month', current_date at time zone 'UTC') at time zone 'UTC' - '1 month'::interval as period_start,
+    date_trunc('month', current_date at time zone 'UTC') at time zone 'UTC' as period_end
+),
+hours as (
+  select
+    generate_series(date_trunc('hour',period_start), date_trunc('hour',period_end), '1 hour'::interval) as hour
+  from range
+),
+running_instances_by_hour as (
+  select
+    hour,
+    logical_az, instance_type,
+    count(id) as total_running
+  from hours
+    left join instances on (
+      created_at <= hour and last_seen >= hour
+    )
+  group by hour, logical_az, instance_type
+),
+running_instances_summarized as (
+  select
+    logical_az, instance_type,
+    min(at_start) as at_start,
+    min(at_end) as at_end,
+    min(total_running) as min,
+    max(total_running) as max,
+    round(avg(total_running)) as avg,
+    round(stddev(total_running),1) as stddev
+   from
+    (select
+       logical_az, instance_type, total_running,
+       first_value(total_running) over w as at_start,
+       last_value(total_running) over w as at_end
+     from running_instances_by_hour
+     window w as (partition by logical_az, instance_type order by hour)
+    ) as ss
+  group by logical_az, instance_type
+  order by logical_az, instance_type
+)
+
+select * from running_instances_summarized;
+"""
+  end
+
   def initdb
     @db.run "create extension hstore"
     @db.create_table :clouds do
@@ -479,6 +530,8 @@ when 'web'
   Controller.new.web
 when 'import-aws-bill'
   Controller.new.import_aws_bill(ARGV[1..-1])
+when 'refresh-instance-usage-summary'
+  Controller.new.refresh_instance_usage_summary
 else
   raise "Unknown command"
 end
