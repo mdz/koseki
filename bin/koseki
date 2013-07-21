@@ -499,7 +499,7 @@ forecast as (
   where month_type = 'month to date'
 ),
 combined as (
-  select * from costs union select * from forecast
+  select * from costs union all select * from forecast
 )
 
 select *,
