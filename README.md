@@ -11,6 +11,7 @@ There's currently no front end; it just collects data into the attached postgres
 The worker runs with: bundle exec bin/koseki poll-forever
 
 That command executes a loop that does the following:
+
 1. Find least recently updated cloud in the `clouds` table
 2. Import AWS bill data
 	* read from billing-csv, cost-allocation, billing-detailed-line-items files
@@ -22,7 +23,7 @@ That command executes a loop that does the following:
 4. Refresh the volumes for the cloud
 	* Use fog and call `volumes.all`
 
-There is a daily task scheduled: `bundle exec bin/koseki get-prices`. This task uses fog to retrieve AWS pricing. Pricing data is populated into `instance_ondemand_prices`, `instance_reserved_prices`, and `ebs_prices` tables.
+There is a daily task scheduled: `bundle exec bin/koseki get-prices`. This task uses a gem to retrieve AWS pricing. Pricing data is populated into `instance_ondemand_prices`, `instance_reserved_prices`, and `ebs_prices` tables.
 
 Web process launches with `bundle exec bin/koseki web`. POST to /register-cloud will register new clouds to have their data collected.
 
